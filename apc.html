@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Atari Punk Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --bg:#eef0ea; --panel:#fbfcf8; --ink:#16201b; --muted:#56625b; --line:#c9d0c8; --soft:#e2e6de;
+  --accent:#1d55b4; --accent-ink:#ffffff; --warn:#b45309; --warn-bg:#fdf1e2; --ok:#15803d;
+  --knob:#1c2420; --knob-cap:#2b352f; --knob-mark:#f1f3ee;
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0f1311; --panel:#171c19; --ink:#e3e9e4; --muted:#95a39a; --line:#2b3430; --soft:#1f2622;
+    --accent:#7eaaff; --accent-ink:#0b1220; --warn:#f0a44b; --warn-bg:#2b2014; --ok:#4ade80;
+    --knob:#0a0d0b; --knob-cap:#262e2a; --knob-mark:#e3e9e4;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0f1311; --panel:#171c19; --ink:#e3e9e4; --muted:#95a39a; --line:#2b3430; --soft:#1f2622;
+  --accent:#7eaaff; --accent-ink:#0b1220; --warn:#f0a44b; --warn-bg:#2b2014; --ok:#4ade80;
+  --knob:#0a0d0b; --knob-cap:#262e2a; --knob-mark:#e3e9e4;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--display);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:28px 64px}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:48px}
+h1,h2,h3{text-wrap:balance;margin:0}
+h1{font-size:clamp(34px,6vw,58px);font-weight:800;font-stretch:72%;letter-spacing:-.01em;line-height:1}
+h2{font-size:26px;font-weight:750;font-stretch:80%}
+h3{font-size:15px;font-weight:700}
+p{margin:0;max-width:68ch}
+.mono{font-family:var(--mono)}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+header{display:flex;flex-direction:column;gap:14px}
+header .sub{color:var(--muted);font-size:16px}
+header .facts{display:flex;flex-wrap:wrap;gap:8px 18px;font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+header .facts b{color:var(--ink);font-weight:600}
+section{display:flex;flex-direction:column;gap:18px}
+.sec-head{display:flex;flex-direction:column;gap:6px;border-top:2px solid var(--ink);padding-top:12px}
+.sec-head p{color:var(--muted)}
+
+/* ---------- bench ---------- */
+.bench{display:grid;grid-template-columns:minmax(260px,320px) 1fr;gap:20px;align-items:start}
+@media (max-width:860px){.bench{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px}
+.controls{display:flex;flex-direction:column;gap:18px}
+.knobs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.knob-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.knob{width:108px;height:108px;position:relative;touch-action:none;cursor:ns-resize;border-radius:50%;outline:none}
+.knob:focus-visible{box-shadow:0 0 0 3px var(--accent)}
+.knob svg{width:100%;height:100%;display:block}
+.knob-name{font-weight:700;font-size:14px}
+.knob-val{font-family:var(--mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label,.lbl{font-size:12px;color:var(--muted);font-family:var(--mono)}
+select,input[type=number]{font:inherit;font-size:14px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:6px 8px;width:100%}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:13.5px}
+.check input{margin-top:3px;accent-color:var(--accent)}
+button{font:inherit;font-size:14px;cursor:pointer;border-radius:4px;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:7px 12px}
+button:hover{border-color:var(--ink)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.power{display:flex;align-items:center;gap:12px;width:100%;justify-content:flex-start;font-weight:700;background:var(--ink);color:var(--bg);border-color:var(--ink);padding:10px 14px}
+.power .led{width:11px;height:11px;border-radius:50%;background:#4a1d1d;box-shadow:inset 0 0 0 1px rgba(0,0,0,.4)}
+.power[aria-pressed="true"] .led{background:#ff3b30;box-shadow:0 0 10px 2px rgba(255,59,48,.7)}
+.presets{display:flex;gap:6px;flex-wrap:wrap}
+.presets button{font-size:13px;padding:5px 10px}
+.hint{font-size:12.5px;color:var(--muted)}
+.warn{display:flex;gap:8px;align-items:flex-start;font-size:13px;background:var(--warn-bg);color:var(--warn);border-radius:4px;padding:8px 10px}
+
+.readouts{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+@media (max-width:620px){.readouts{grid-template-columns:repeat(2,1fr)}}
+.ro{background:var(--panel);padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.ro .k{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.04em}
+.ro .v{font-family:var(--mono);font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ro .f{font-size:11.5px;color:var(--muted)}
+.ro.hero .v{color:var(--accent)}
+.display{display:flex;flex-direction:column;gap:14px;min-width:0}
+.scope{background:#0b0f0d;border-radius:6px;border:1px solid #26302b;padding:10px;display:flex;flex-direction:column;gap:6px}
+.scope canvas{width:100%;height:300px;display:block}
+.scope .bar{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 14px;font-family:var(--mono);font-size:11.5px;color:#9fb0a6}
+.ch{display:inline-flex;align-items:center;gap:6px}
+.ch i{width:10px;height:3px;display:inline-block;border-radius:2px}
+.chart{padding:14px}
+.chart canvas{width:100%;height:230px;display:block}
+.chart .top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline;margin-bottom:6px}
+
+/* ---------- schematic ---------- */
+.sch{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px}
+.sch svg{display:block;min-width:720px;width:100%;height:auto}
+.sch .w{stroke:var(--ink);stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.sch .body{fill:var(--panel);stroke:var(--ink);stroke-width:1.6}
+.sch .ic{fill:var(--soft);stroke:var(--ink);stroke-width:1.8}
+.sch .dot{fill:var(--ink)}
+.sch text{font-family:var(--mono);font-size:11px;fill:var(--ink)}
+.sch .ref{fill:var(--accent);font-weight:600}
+.sch .pn{font-size:9.5px;fill:var(--muted)}
+.sch .note{fill:var(--muted);font-size:10px}
+.sch .hl{stroke:var(--accent);stroke-width:2.2}
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px 24px}
+.legend div{display:flex;flex-direction:column;gap:4px;font-size:14px}
+.legend b{font-family:var(--mono);font-size:12px;color:var(--accent)}
+
+/* ---------- tables ---------- */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--soft)}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.pos{font-family:var(--mono);font-weight:600;color:var(--accent);white-space:nowrap}
+tr.group td{background:var(--soft);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:6px 12px}
+.tag{font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-radius:3px;padding:0 5px;color:var(--muted);white-space:nowrap}
+td input[type=number]{width:110px;padding:4px 6px;font-family:var(--mono);font-size:13px}
+.dev-ok{color:var(--ok)} .dev-bad{color:var(--warn)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media (max-width:860px){.two{grid-template-columns:1fr}}
+ol.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;max-width:72ch}
+ol.steps li::marker{font-family:var(--mono);color:var(--muted)}
+footer{font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+footer a{color:var(--accent)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+<header>
+  <span class="eyebrow">Stepped Tone Generator · Forrest M. Mims III, 1980 · NE556</span>
+  <h1>Atari Punk Console</h1>
+  <p class="sub">Классический «ступенчатый генератор тона» на сдвоенном таймере 556: астабильный генератор задаёт частоту, ждущий мультивибратор режет её на целые доли. Ниже — рабочий стенд, принципиальная схема и перечень элементов для сборки.</p>
+  <div class="facts"><span>Питание <b>9 В</b></span><span>Микросхемы <b>1 × 556</b> (или 2 × 555)</span><span>Регуляторы <b>2 × 500 кОм</b></span><span>Деталей <b>≈ 12</b></span></div>
+</header>
+
+<!-- ================= BENCH ================= -->
+<section id="bench" aria-labelledby="bench-h">
+  <div class="sec-head">
+    <span class="eyebrow">Тестовый стенд</span>
+    <h2 id="bench-h">Покрутите ручки и послушайте</h2>
+    <p>Модель повторяет логику 556 событие за событием: каждый спад астабильного генератора запускает ждущий, запуски во время импульса игнорируются. Отсюда и ступени: выходная частота = f<sub>A</sub> / N.</p>
+  </div>
+  <div class="bench">
+    <div class="panel controls">
+      <button class="power" id="power" aria-pressed="false"><span class="led" aria-hidden="true"></span><span id="power-t">S1 · Включить звук</span></button>
+      <div class="knobs">
+        <div class="knob-wrap">
+          <div class="knob" id="k1" role="slider" tabindex="0" aria-label="VR1, частота" aria-valuemin="0" aria-valuemax="100"></div>
+          <span class="knob-name">VR1 · Pitch</span>
+          <span class="knob-val" id="k1v">—</span>
+        </div>
+        <div class="knob-wrap">
+          <div class="knob" id="k2" role="slider" tabindex="0" aria-label="VR2, ступени" aria-valuemin="0" aria-valuemax="100"></div>
+          <span class="knob-name">VR2 · Step</span>
+          <span class="knob-val" id="k2v">—</span>
+        </div>
+      </div>
+      <p class="hint">Тяните ручку вверх/вниз, колесо мыши или стрелки. Shift — точная подстройка.</p>
+      <div class="presets" aria-label="Пресеты">
+        <button data-p="0.92,0.95">Гул</button>
+        <button data-p="0.16,0.06">Ступени</button>
+        <button data-p="0.04,0.004">Писк</button>
+        <button data-p="0.30,0.02">Без деления</button>
+      </div>
+      <div class="field">
+        <label for="variant">Вариант схемы</label>
+        <select id="variant">
+          <option value="kaustic">Kaustic Machines — C2 = 100 нФ</option>
+          <option value="mims">Mims 1980 — C2 = 10 нФ</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="outmode">Нагрузка выхода (выв. 9 → C3 10 мкФ)</label>
+        <select id="outmode">
+          <option value="line">Линейный выход (10k / 4.7k)</option>
+          <option value="spk">Динамик 8 Ом (ФВЧ ≈ 2 кГц)</option>
+        </select>
+      </div>
+      <label class="check"><input type="checkbox" id="rs"> <span>Защитные R<sub>S</sub> = 330 Ом последовательно с VR1 и VR2 (в оригинале нет)</span></label>
+      <div class="warn" id="warn" hidden>⚠ <span>Потенциометр почти в нуле без R<sub>S</sub>: выв. 1/13 (разряд) замкнут на +9 В через малое сопротивление — на реальной плате это греет и убивает таймер.</span></div>
+      <div class="field">
+        <label for="vol">Громкость</label>
+        <input type="range" id="vol" min="0" max="1" step="0.01" value="0.35">
+      </div>
+    </div>
+
+    <div class="display">
+      <div class="readouts">
+        <div class="ro"><span class="k">f<sub>A</sub> астабильный</span><span class="v" id="r-fa">—</span><span class="f">1.44 / ((VR1+2R1)·C1)</span></div>
+        <div class="ro"><span class="k">T<sub>M</sub> ждущий</span><span class="v" id="r-tm">—</span><span class="f">1.1 · VR2 · C2</span></div>
+        <div class="ro"><span class="k">Деление N</span><span class="v" id="r-n">—</span><span class="f">⌊T<sub>M</sub>/T<sub>A</sub>⌋ + 1</span></div>
+        <div class="ro hero"><span class="k">f<sub>OUT</sub> выход</span><span class="v" id="r-fo">—</span><span class="f" id="r-note">f<sub>A</sub> / N</span></div>
+        <div class="ro"><span class="k">Скважность</span><span class="v" id="r-d">—</span><span class="f">T<sub>M</sub> / (N·T<sub>A</sub>)</span></div>
+      </div>
+      <div class="scope" aria-label="Осциллограммы">
+        <div class="bar">
+          <span class="ch"><i style="background:#f5d90a"></i>CH1 выв. 5 → 8 (запуск)</span>
+          <span class="ch"><i style="background:#22d3ee"></i>CH2 C2, выв. 12/13</span>
+          <span class="ch"><i style="background:#f472b6"></i>CH3 выв. 9 OUT</span>
+        </div>
+        <canvas id="scope"></canvas>
+        <div class="bar"><span id="tb">—</span><span>синхр.: CH3 ↑ · 5 В/дел условно</span></div>
+      </div>
+      <div class="panel chart">
+        <div class="top"><h3>Карта ступеней при текущем VR1</h3><span class="lbl" id="stair-l">—</span></div>
+        <canvas id="stair" aria-label="Зависимость выходной частоты от положения VR2"></canvas>
+        <p class="hint">Сплошная — f<sub>OUT</sub> от положения VR2; пунктир — 1/T<sub>M</sub>, куда «хотел бы» идти тон без квантования. Точка — текущее положение.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SCHEMATIC ================= -->
+<section id="schematic" aria-labelledby="sch-h">
+  <div class="sec-head">
+    <span class="eyebrow">Принципиальная схема</span>
+    <h2 id="sch-h">Схема на NE556</h2>
+    <p>Выводы 556 показаны в порядке корпуса DIP-14, как они стоят на макетке. Синим выделена связь, на которой держится весь инструмент: выход таймера A (выв. 5) прямо на запуск таймера B (выв. 8).</p>
+  </div>
+  <div class="sch">
+  <svg viewBox="0 0 840 590" role="img" aria-label="Принципиальная схема Atari Punk Console на NE556">
+    <!-- power block -->
+    <text x="30" y="30" class="note">ПИТАНИЕ</text>
+    <path class="w" d="M60 80 H200 M60 80 V108 M60 152 V195 M60 206 V236"/>
+    <circle cx="60" cy="112" r="3.5" class="body"/><circle cx="60" cy="148" r="3.5" class="body"/>
+    <path class="w" d="M60 145 L76 116"/>
+    <text x="80" y="136" class="ref">S1</text>
+    <path class="w" d="M44 195 H76" style="stroke-width:2.2"/><path class="w" d="M52 206 H68" style="stroke-width:3"/>
+    <text x="38" y="192" class="note">+</text>
+    <text x="80" y="198" class="ref">BT1</text><text x="80" y="211">9 В</text>
+    <path class="w" d="M48 236 H72 M52 241 H68 M56 246 H64"/>
+    <circle cx="130" cy="80" r="3" class="dot"/><circle cx="175" cy="80" r="3" class="dot"/>
+    <path class="w" d="M130 80 V160 M114 160 H146 M114 170 H146 M130 170 V206 M118 206 H142 M122 211 H138 M126 216 H134"/>
+    <text x="130" y="236" text-anchor="middle" class="ref">C4</text><text x="130" y="249" text-anchor="middle">100n</text>
+    <path class="w" d="M175 80 V160 M159 160 H191 M175 170 V206 M163 206 H187 M167 211 H183 M171 216 H179"/>
+    <path class="w" d="M159 172 Q175 164 191 172"/>
+    <text x="163" y="156" class="note">+</text>
+    <text x="178" y="236" text-anchor="middle" class="ref">C5</text><text x="178" y="249" text-anchor="middle">10µ</text>
+    <path class="w" d="M200 80 V62 M190 62 H210"/><text x="200" y="55" text-anchor="middle">+9V</text>
+
+    <!-- IC -->
+    <rect x="380" y="110" width="140" height="420" rx="4" class="ic"/>
+    <path d="M450 118 V522" stroke="var(--muted)" stroke-dasharray="3 4" stroke-width="1"/>
+    <text x="450" y="102" text-anchor="middle" class="ref">U1 NE556</text>
+    <text x="414" y="528" text-anchor="middle" class="note">таймер A</text>
+    <text x="486" y="528" text-anchor="middle" class="note">таймер B</text>
+    <g>
+      <text x="386" y="144">DIS</text><text x="386" y="204">THR</text><text x="386" y="264">CV</text><text x="386" y="324">RST</text><text x="386" y="384">OUT</text><text x="386" y="444">TRIG</text><text x="386" y="504">GND</text>
+      <text x="514" y="144" text-anchor="end">VCC</text><text x="514" y="204" text-anchor="end">DIS</text><text x="514" y="264" text-anchor="end">THR</text><text x="514" y="324" text-anchor="end">CV</text><text x="514" y="384" text-anchor="end">RST</text><text x="514" y="444" text-anchor="end">OUT</text><text x="514" y="504" text-anchor="end">TRIG</text>
+      <text x="372" y="135" text-anchor="end" class="pn">1</text><text x="372" y="195" text-anchor="end" class="pn">2</text><text x="372" y="255" text-anchor="end" class="pn">3</text><text x="372" y="315" text-anchor="end" class="pn">4</text><text x="372" y="375" text-anchor="end" class="pn">5</text><text x="372" y="435" text-anchor="end" class="pn">6</text><text x="372" y="495" text-anchor="end" class="pn">7</text>
+      <text x="528" y="135" class="pn">14</text><text x="528" y="195" class="pn">13</text><text x="528" y="255" class="pn">12</text><text x="528" y="315" class="pn">11</text><text x="528" y="375" class="pn">10</text><text x="528" y="435" class="pn">9</text><text x="528" y="495" class="pn">8</text>
+    </g>
+
+    <!-- timer A: astable -->
+    <path class="w" d="M300 40 V65 M290 40 H310 M300 115 V170 M300 210 V275 M300 285 V300"/>
+    <text x="300" y="32" text-anchor="middle">+9V</text>
+    <rect x="292" y="65" width="16" height="50" class="body"/>
+    <path class="w" d="M284 110 L318 72 M318 72 l-8 1 M318 72 l-1 8"/>
+    <text x="284" y="84" text-anchor="end" class="ref">VR1 500k</text><text x="284" y="98" text-anchor="end" class="note">частота</text>
+    <path class="w" d="M380 140 H300"/><circle cx="300" cy="140" r="3" class="dot"/>
+    <rect x="292" y="170" width="16" height="40" class="body"/>
+    <text x="284" y="194" text-anchor="end" class="ref">R1 1k</text>
+    <circle cx="300" cy="240" r="3" class="dot"/>
+    <path class="w" d="M300 240 H340 M380 200 H340 V440 H380"/><circle cx="340" cy="240" r="3" class="dot"/>
+    <path class="w" d="M284 275 H316" style="stroke-width:2.2"/><path class="w" d="M284 285 H316" style="stroke-width:2.2"/>
+    <text x="278" y="284" text-anchor="end" class="ref">C1 10n</text>
+    <path class="w" d="M288 300 H312 M292 305 H308 M296 310 H304"/>
+    <!-- CV1 NC -->
+    <path class="w" d="M380 260 H366 M361 255 l10 10 M371 255 l-10 10"/>
+    <!-- RST1 -> +9V -->
+    <path class="w" d="M380 320 H362 V304 M354 304 H370"/><text x="362" y="298" text-anchor="middle" style="font-size:9.5px">+9V</text>
+    <!-- GND pin 7 -->
+    <path class="w" d="M380 500 H362 V510 M350 510 H374 M354 515 H370 M358 520 H366"/>
+
+    <!-- pin5 -> pin8 trigger link (highlight) -->
+    <path class="w hl" d="M380 380 H346 A6 6 0 0 0 334 380 H200 V560 H600 V500 H520"/>
+    <text x="214" y="553" class="note" style="fill:var(--accent)">выв. 5 → выв. 8: каждый спад запускает ждущий</text>
+
+    <!-- timer B: monostable -->
+    <path class="w" d="M520 140 H545 V122 M537 122 H553"/><text x="545" y="115" text-anchor="middle" style="font-size:9.5px">+9V</text>
+    <path class="w" d="M520 200 H580 V260 M520 260 H700"/>
+    <circle cx="580" cy="260" r="3" class="dot"/><circle cx="640" cy="260" r="3" class="dot"/>
+    <path class="w" d="M640 40 V95 M630 40 H650 M640 145 V260"/><text x="640" y="32" text-anchor="middle">+9V</text>
+    <rect x="632" y="95" width="16" height="50" class="body"/>
+    <path class="w" d="M624 140 L658 102 M658 102 l-8 1 M658 102 l-1 8"/>
+    <text x="664" y="114" class="ref">VR2 500k</text><text x="664" y="128" class="note">ступени</text>
+    <path class="w" d="M700 260 V295 M684 295 H716 M684 305 H716 M700 305 V322 M688 322 H712 M692 327 H708 M696 332 H704"/>
+    <text x="722" y="304" class="ref">C2 100n</text><text x="722" y="318" class="note">Mims: 10n</text>
+    <!-- CV2 NC -->
+    <path class="w" d="M520 320 H534 M529 315 l10 10 M539 315 l-10 10"/>
+    <!-- RST2 -->
+    <path class="w" d="M520 380 H545 V364 M537 364 H553"/><text x="545" y="357" text-anchor="middle" style="font-size:9.5px">+9V</text>
+    <!-- output -->
+    <path class="w" d="M520 440 H640 M652 440 H740 V455 M740 485 V508 M728 508 H752 M732 513 H748 M736 518 H744"/>
+    <path class="w" d="M640 426 V454" style="stroke-width:2.2"/><path class="w" d="M656 426 Q650 440 656 454" style="stroke-width:2.2"/>
+    <text x="630" y="424" class="note">+</text>
+    <text x="648" y="416" text-anchor="middle" class="ref">C3 10µ</text>
+    <rect x="732" y="455" width="16" height="30" class="body"/>
+    <path class="body" d="M748 455 L770 438 V502 L748 485 Z"/>
+    <text x="778" y="466" class="ref">LS1</text><text x="778" y="480">8 Ом</text>
+    <text x="700" y="436" class="note">OUT</text>
+    <!-- pin 8 corner already via highlight path -->
+  </svg>
+  </div>
+  <div class="legend">
+    <div><b>Таймер A — астабильный</b>VR1 + R1 заряжают C1, разряд идёт только через R1 (1 кОм). Поэтому низкий уровень на выв. 5 — короткая «иголка» ≈ 7 мкс, а период регулирует VR1: от ≈ 290 Гц до ≈ 70 кГц.</div>
+    <div><b>Таймер B — ждущий</b>Иголка на выв. 8 (ниже ⅓ Vcc) запускает импульс длиной 1.1·VR2·C2. Пока импульс идёт, новые запуски игнорируются — это и есть делитель частоты на N.</div>
+    <div><b>Выход</b>Прямоугольник с выв. 9 через C3 на динамик 8 Ом (оригинал) или через делитель 10k/4.7k на линейное гнездо (≈ −4 дБ, версия Kaustic Machines).</div>
+  </div>
+</section>
+
+<!-- ================= BOM ================= -->
+<section id="bom" aria-labelledby="bom-h">
+  <div class="sec-head">
+    <span class="eyebrow">Перечень элементов</span>
+    <h2 id="bom-h">Что купить</h2>
+    <p>Базовый комплект — строки без пометки. «Опц.» — доработки, которых нет в схеме Мимса, но которые стоит поставить на реальную плату.</p>
+  </div>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Поз.</th><th>Наименование</th><th>Номинал / тип</th><th class="num">Кол.</th><th>Примечание</th></tr></thead>
+    <tbody>
+      <tr class="group"><td colspan="5">Микросхемы</td></tr>
+      <tr><td class="pos">U1</td><td>Сдвоенный таймер</td><td>NE556 / LM556, DIP-14</td><td class="num">1</td><td>Или 2 × NE555 (DIP-8), см. таблицу выводов ниже. CMOS-версия ICM7556 тоже работает, выход слабее</td></tr>
+      <tr><td class="pos">—</td><td>Панелька</td><td>DIP-14</td><td class="num">1</td><td>Чтобы не греть микросхему паяльником</td></tr>
+      <tr class="group"><td colspan="5">Регуляторы и резисторы</td></tr>
+      <tr><td class="pos">VR1</td><td>Потенциометр, «Pitch»</td><td>500 кОм, линейный (B500K)</td><td class="num">1</td><td>Частота астабильного генератора. 470 кОм — полноценная замена</td></tr>
+      <tr><td class="pos">VR2</td><td>Потенциометр, «Step»</td><td>500 кОм, линейный (B500K)</td><td class="num">1</td><td>Длительность импульса ждущего → ступени. С C2 = 100 нФ полезный ход — первые 10–20 %; многие ставят логарифмический A500K</td></tr>
+      <tr><td class="pos">R1</td><td>Резистор</td><td>1 кОм, 0.25 Вт</td><td class="num">1</td><td>R<sub>B</sub> астабильного; задаёт ширину запускающей иголки</td></tr>
+      <tr><td class="pos">R<sub>S1</sub>, R<sub>S2</sub></td><td>Резистор <span class="tag">опц.</span></td><td>330 Ом, 0.25 Вт</td><td class="num">2</td><td>Последовательно с VR1 и VR2: ограничивают ток разряда, когда ручка в нуле</td></tr>
+      <tr class="group"><td colspan="5">Конденсаторы</td></tr>
+      <tr><td class="pos">C1</td><td>Керамический / плёночный</td><td>10 нФ (103)</td><td class="num">1</td><td>Времязадающий, таймер A. Плёнка стабильнее по температуре</td></tr>
+      <tr><td class="pos">C2</td><td>Керамический / плёночный</td><td>100 нФ (104)</td><td class="num">1</td><td>Времязадающий, таймер B. У Мимса 10 нФ — ступени мельче и выше</td></tr>
+      <tr><td class="pos">C3</td><td>Электролитический</td><td>10 мкФ, 16 В</td><td class="num">1</td><td>Разделительный на выходе, «+» к выв. 9</td></tr>
+      <tr><td class="pos">C4</td><td>Керамический <span class="tag">опц.</span></td><td>100 нФ</td><td class="num">1</td><td>Развязка питания, вплотную к выв. 14–7</td></tr>
+      <tr><td class="pos">C5</td><td>Электролитический <span class="tag">опц.</span></td><td>10–100 мкФ, 16 В</td><td class="num">1</td><td>Буфер питания: 556 даёт броски тока на фронтах</td></tr>
+      <tr class="group"><td colspan="5">Выход</td></tr>
+      <tr><td class="pos">LS1</td><td>Динамик</td><td>8 Ом, 0.25–0.5 Вт</td><td class="num">1</td><td>Вариант Мимса: прямо с C3</td></tr>
+      <tr><td class="pos">R3, R4</td><td>Резисторы <span class="tag">опц.</span></td><td>10 кОм и 4.7 кОм</td><td class="num">2</td><td>Делитель на линейный выход вместо динамика: C3 → R3 → гнездо, R4 на землю</td></tr>
+      <tr><td class="pos">J1</td><td>Гнездо <span class="tag">опц.</span></td><td>Моно 6.3 или 3.5 мм</td><td class="num">1</td><td>Линейный выход</td></tr>
+      <tr class="group"><td colspan="5">Питание и корпус</td></tr>
+      <tr><td class="pos">BT1</td><td>Батарея + клипса</td><td>9 В «Крона» (6F22)</td><td class="num">1</td><td>Схема работает от 5 до 15 В; частоты от напряжения почти не зависят</td></tr>
+      <tr><td class="pos">S1</td><td>Выключатель</td><td>SPST, тумблер</td><td class="num">1</td><td></td></tr>
+      <tr><td class="pos">D1, R5</td><td>Светодиод + резистор <span class="tag">опц.</span></td><td>LED 3 мм, 1 кОм</td><td class="num">1+1</td><td>Индикатор питания</td></tr>
+      <tr><td class="pos">—</td><td>Макетная плата, провода</td><td>830 точек</td><td class="num">1</td><td>Для первой сборки</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="two">
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Функция</th><th class="num">556 A</th><th class="num">555 №1</th><th class="num">556 B</th><th class="num">555 №2</th></tr></thead>
+        <tbody>
+          <tr><td>DIS · разряд</td><td class="num">1</td><td class="num">7</td><td class="num">13</td><td class="num">7</td></tr>
+          <tr><td>THR · порог</td><td class="num">2</td><td class="num">6</td><td class="num">12</td><td class="num">6</td></tr>
+          <tr><td>CV · управление</td><td class="num">3</td><td class="num">5</td><td class="num">11</td><td class="num">5</td></tr>
+          <tr><td>RST · сброс</td><td class="num">4</td><td class="num">4</td><td class="num">10</td><td class="num">4</td></tr>
+          <tr><td>OUT · выход</td><td class="num">5</td><td class="num">3</td><td class="num">9</td><td class="num">3</td></tr>
+          <tr><td>TRIG · запуск</td><td class="num">6</td><td class="num">2</td><td class="num">8</td><td class="num">2</td></tr>
+          <tr><td>GND / VCC</td><td class="num">7 / 14</td><td class="num">1 / 8</td><td class="num">7 / 14</td><td class="num">1 / 8</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="panel" style="display:flex;flex-direction:column;gap:10px">
+      <h3>Список соединений (netlist)</h3>
+      <pre class="mono" style="margin:0;font-size:12.5px;line-height:1.6;white-space:pre-wrap">+9V   : S1 → выв. 14, 4, 10; VR1(1); VR2(1); C4, C5(+)
+GND   : выв. 7; C1, C2, C4, C5(−); LS1(−); BT1(−)
+DIS_A : выв. 1 — VR1(движок) — R1
+TIM_A : выв. 2 + выв. 6 — R1 — C1
+TRIG  : выв. 5 → выв. 8
+TIM_B : выв. 12 + выв. 13 — VR2(движок) — C2
+OUT   : выв. 9 → C3(+);  C3(−) → LS1(+)
+NC    : выв. 3, 11 (CV; можно 10 нФ на землю)</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CHECK ================= -->
+<section id="check" aria-labelledby="chk-h">
+  <div class="sec-head">
+    <span class="eyebrow">Сверка с железом</span>
+    <h2 id="chk-h">Контрольные точки</h2>
+    <p>Выставьте сопротивление потенциометров мультиметром (питание выключено, щупы на движок и вывод, идущий к +9 В), включите и измерьте частоту на выв. 9 частотомером или осциллографом. Впишите результат — стенд посчитает отклонение. Допуск ±15 % нормален: керамика 10 % и разброс порогов 556.</p>
+  </div>
+  <div class="tbl">
+    <table id="chk">
+      <thead><tr><th>Точка</th><th class="num">VR1</th><th class="num">VR2</th><th class="num">f<sub>A</sub></th><th class="num">T<sub>M</sub></th><th class="num">N</th><th class="num">f<sub>OUT</sub> расчёт</th><th>Измерено, Гц</th><th class="num">Откл.</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="two">
+    <div class="panel" style="display:flex;flex-direction:column;gap:10px">
+      <h3>Порядок первого включения</h3>
+      <ol class="steps">
+        <li>Без микросхемы в панельке подайте питание: на выв. 14, 4, 10 должно быть +9 В, на выв. 7 — 0.</li>
+        <li>Проверьте, что C1 и C2 не закорочены: между выв. 2/6 и землёй — обрыв.</li>
+        <li>Вставьте 556 ключом к выв. 1. Ток потребления в покое — около 6–10 мА.</li>
+        <li>VR2 в минимум: звук должен идти за VR1 плавно, без ступеней (N = 1).</li>
+        <li>Поднимайте VR2: тон начнёт падать скачками — f<sub>A</sub>/2, f<sub>A</sub>/3 … Если скачков нет, проверьте перемычку выв. 5 → 8.</li>
+      </ol>
+    </div>
+    <div class="panel" style="display:flex;flex-direction:column;gap:10px">
+      <h3>Если не звучит</h3>
+      <ol class="steps">
+        <li>Тишина и греется 556 — ручка в нуле без R<sub>S</sub>, выв. 1 или 13 закорочен на +9 В. Поставьте 330 Ом.</li>
+        <li>Постоянный писк, VR2 не влияет — выв. 12 и 13 не соединены, либо C2 не на месте.</li>
+        <li>Щелчки вместо тона — перепутаны выв. 2 и 6 с выв. 1; разряд должен идти через R1.</li>
+        <li>Динамик тихий — это нормально: 10 мкФ на 8 Ом срезают всё ниже ≈ 2 кГц. Для баса нужен линейный выход и усилитель.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span>Оригинал: F. M. Mims III, «Engineer's Notebook: Integrated Circuit Applications» (Radio Shack, 1980) и «Engineer's Mini-Notebook: 555 Timer IC Circuits» — Stepped Tone Generator. Название Atari Punk Console — от Kaustic Machines.</span>
+  <span>Модель стенда идеализирует 556: пороги ровно ⅓ и ⅔ Vcc, разряд C2 мгновенный, выход «rail-to-rail». Реальный NE556 даёт на выходе около Vcc − 1.7 В.</span>
+</footer>
+</div>
+
+<script>
+(()=>{
+'use strict';
+/* ---------------- model ---------------- */
+const S = { p1:0.16, p2:0.06, variant:'kaustic', out:'line', rs:false, vol:0.35 };
+const VR = 500e3, R1 = 1e3, C1 = 10e-9, RSV = 330;
+const C2of = v => v==='mims' ? 10e-9 : 100e-9;
+
+function model(p1,p2,st=S){
+  const rs = st.rs ? RSV : 0, C2 = C2of(st.variant);
+  const RA = p1*VR + rs;
+  const th = 0.693*(RA+R1)*C1, tl = 0.693*R1*C1, TA = th+tl;
+  const RM = p2*VR + rs;
+  const tau = RM*C2, TMraw = 1.1*tau, TM = Math.max(TMraw, tl);
+  const N = Math.floor(TM/TA)+1;
+  return {RA,RM,th,tl,TA,fA:1/TA,tau,TM,TMraw,N,fout:1/(N*TA),duty:TM/(N*TA)};
+}
+
+/* ---------------- formatting ---------------- */
+const fmtHz = f => f>=1000 ? (f/1000).toFixed(f>=1e4?1:2)+' кГц' : f.toFixed(f>=100?0:1)+' Гц';
+const fmtT = t => t>=1e-3 ? (t*1e3).toFixed(t>=1e-2?1:2)+' мс' : (t*1e6).toFixed(t>=1e-4?0:1)+' мкс';
+const fmtR = r => r>=1e3 ? (r/1e3).toFixed(r>=1e5?0:1)+' кОм' : Math.round(r)+' Ом';
+
+/* ---------------- storage (per-viewer convenience) ---------------- */
+const store = {
+  get(k,d){ try{ const v = localStorage.getItem('apc.'+k); return v==null?d:JSON.parse(v);}catch(e){return d;} },
+  set(k,v){ try{ localStorage.setItem('apc.'+k, JSON.stringify(v)); }catch(e){} }
+};
+Object.assign(S, store.get('state', {}));
+
+/* ---------------- knobs ---------------- */
+function knob(el, get, set){
+  const NS='http://www.w3.org/2000/svg';
+  el.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true">
+    <path d="${arc(0,1)}" stroke="var(--line)" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <path class="val" stroke="var(--accent)" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <circle cx="50" cy="50" r="31" fill="var(--knob)"/>
+    <circle cx="50" cy="50" r="26" fill="var(--knob-cap)"/>
+    <g class="ind"><rect x="48.2" y="26" width="3.6" height="14" rx="1.8" fill="var(--knob-mark)"/></g>
+  </svg>`;
+  const val = el.querySelector('.val'), ind = el.querySelector('.ind');
+  function arc(a,b){
+    const A = t => (-135 + 270*t - 90) * Math.PI/180, r=42;
+    const p = t => [50 + r*Math.cos(A(t)), 50 + r*Math.sin(A(t))];
+    const [x0,y0]=p(a),[x1,y1]=p(b);
+    return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 ${(b-a)*270>180?1:0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+  }
+  function draw(){
+    const v = get();
+    val.setAttribute('d', v>0.002 ? arc(0,v) : 'M0 0');
+    ind.setAttribute('transform', `rotate(${-135+270*v} 50 50)`);
+    el.setAttribute('aria-valuenow', Math.round(v*100));
+  }
+  const clamp = v => Math.min(1, Math.max(0, v));
+  let drag=null;
+  el.addEventListener('pointerdown', e=>{ el.setPointerCapture(e.pointerId); drag={y:e.clientY,v:get()}; el.focus(); });
+  el.addEventListener('pointermove', e=>{ if(!drag) return; const k = e.shiftKey?1200:220; set(clamp(drag.v + (drag.y-e.clientY)/k)); });
+  const end = ()=>{ drag=null; };
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+  el.addEventListener('wheel', e=>{ e.preventDefault(); set(clamp(get() - Math.sign(e.deltaY)*(e.shiftKey?0.002:0.01))); }, {passive:false});
+  el.addEventListener('keydown', e=>{
+    const s = e.shiftKey?0.002:0.01; let v=get();
+    if(e.key==='ArrowUp'||e.key==='ArrowRight') v+=s;
+    else if(e.key==='ArrowDown'||e.key==='ArrowLeft') v-=s;
+    else if(e.key==='PageUp') v+=0.1; else if(e.key==='PageDown') v-=0.1;
+    else if(e.key==='Home') v=0; else if(e.key==='End') v=1; else return;
+    e.preventDefault(); set(clamp(v));
+  });
+  return draw;
+}
+
+/* ---------------- audio ---------------- */
+const WORKLET = `
+class APC extends AudioWorkletProcessor{
+  constructor(){ super(); this.p={TA:1e-3,TM:5e-4,tl:7e-6,fc:1,gain:0.3}; this.t=0; this.tA=0; this.high=false; this.mEnd=0; this.y=0; this.xp=0; this.g=0;
+    this.port.onmessage=e=>{ Object.assign(this.p,e.data); if(this.tA>this.t+this.p.TA) this.tA=this.t+this.p.TA; if(this.high&&this.mEnd>this.t+this.p.TM) this.mEnd=this.t+this.p.TM; }; }
+  process(_,outs){
+    const out=outs[0]; const o=out[0]; const dt=1/sampleRate; const {TA,TM,fc,gain}=this.p;
+    const a=Math.exp(-2*Math.PI*fc*dt);
+    for(let i=0;i<o.length;i++){
+      let cur=this.t; const end=cur+dt; let cov=0, guard=0;
+      while(guard++<4000){
+        if(this.high){
+          if(this.mEnd<=end){ cov+=this.mEnd-cur; cur=this.mEnd; this.high=false; while(this.tA<=cur) this.tA+=TA; }
+          else { cov+=end-cur; break; }
+        } else {
+          if(this.tA<=end){ cur=Math.max(cur,this.tA); this.high=true; this.mEnd=this.tA+TM; this.tA+=TA; }
+          else break;
+        }
+      }
+      this.t=end;
+      const x=cov/dt; this.y=a*(this.y+x-this.xp); this.xp=x;
+      this.g+= (gain-this.g)*0.002;
+      o[i]=this.y*this.g;
+    }
+    for(let c=1;c<out.length;c++) out[c].set(o);
+    return true;
+  }
+}
+registerProcessor('apc-556', APC);`;
+
+let ctx=null, node=null, running=false;
+function audioParams(){
+  const m = model(S.p1,S.p2);
+  // line: 10uF into 14.7k ≈ 1.1 Hz; speaker: 10uF into 8 ohm ≈ 2 kHz
+  const fc = S.out==='spk' ? 1/(2*Math.PI*8*10e-6) : 1/(2*Math.PI*14.7e3*10e-6);
+  const gain = S.vol * (S.out==='spk' ? 0.9 : 0.55);
+  return {TA:m.TA, TM:m.TM, tl:m.tl, fc, gain: running?gain:0};
+}
+function pushAudio(){ if(node && node.port) node.port.postMessage(audioParams()); else if(node && node._p) Object.assign(node._p, audioParams()); }
+async function startAudio(){
+  if(!ctx){
+    ctx = new (window.AudioContext||window.webkitAudioContext)();
+    try{
+      const url = URL.createObjectURL(new Blob([WORKLET],{type:'application/javascript'}));
+      await ctx.audioWorklet.addModule(url);
+      node = new AudioWorkletNode(ctx,'apc-556',{outputChannelCount:[2]});
+    }catch(e){
+      // fallback: ScriptProcessor running the same event model
+      const sp = ctx.createScriptProcessor(2048,0,2); const st={t:0,tA:0,high:false,mEnd:0,y:0,xp:0,g:0}; sp._p=audioParams();
+      sp.onaudioprocess = ev=>{
+        const o=ev.outputBuffer.getChannelData(0), o2=ev.outputBuffer.getChannelData(1), dt=1/ctx.sampleRate, p=sp._p;
+        if(st.tA>st.t+p.TA) st.tA=st.t+p.TA;
+        const a=Math.exp(-2*Math.PI*p.fc*dt);
+        for(let i=0;i<o.length;i++){
+          let cur=st.t; const end=cur+dt; let cov=0, g=0;
+          while(g++<4000){
+            if(st.high){ if(st.mEnd<=end){cov+=st.mEnd-cur;cur=st.mEnd;st.high=false;while(st.tA<=cur)st.tA+=p.TA;} else {cov+=end-cur;break;} }
+            else { if(st.tA<=end){cur=Math.max(cur,st.tA);st.high=true;st.mEnd=st.tA+p.TM;st.tA+=p.TA;} else break; }
+          }
+          st.t=end; const x=cov/dt; st.y=a*(st.y+x-st.xp); st.xp=x; st.g+=(p.gain-st.g)*0.002; o[i]=o2[i]=st.y*st.g;
+        }
+      };
+      node = sp;
+    }
+    node.connect(ctx.destination);
+  }
+  if(ctx.state!=='running') await ctx.resume();
+}
+const powerBtn = document.getElementById('power');
+powerBtn.addEventListener('click', async ()=>{
+  running = !running;
+  powerBtn.setAttribute('aria-pressed', running);
+  document.getElementById('power-t').textContent = running ? 'S1 · Выключить звук' : 'S1 · Включить звук';
+  if(running){ try{ await startAudio(); }catch(e){ running=false; powerBtn.setAttribute('aria-pressed',false); document.getElementById('power-t').textContent='Звук недоступен в этом браузере'; } }
+  pushAudio();
+});
+
+/* ---------------- theme colors for canvas ---------------- */
+let C = {};
+function readColors(){
+  const cs = getComputedStyle(document.documentElement);
+  ['--ink','--muted','--line','--accent','--panel','--soft'].forEach(k=> C[k]=cs.getPropertyValue(k).trim());
+}
+
+/* ---------------- scope ---------------- */
+const scope = document.getElementById('scope');
+function fitCanvas(cv){
+  const dpr = window.devicePixelRatio||1, r = cv.getBoundingClientRect();
+  const w = Math.max(10,Math.round(r.width*dpr)), h = Math.max(10,Math.round(r.height*dpr));
+  if(cv.width!==w||cv.height!==h){ cv.width=w; cv.height=h; }
+  const g = cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0); return {g,w:r.width,h:r.height};
+}
+function pickDiv(target){
+  const steps=[]; for(let e=-6;e<=-1;e++) for(const m of [1,2,5]) steps.push(m*Math.pow(10,e));
+  for(const s of steps) if(s*10>=target) return s; return steps[steps.length-1];
+}
+function drawScope(m){
+  const {g,w,h} = fitCanvas(scope);
+  g.fillStyle='#0b0f0d'; g.fillRect(0,0,w,h);
+  const div = pickDiv(Math.max(2.4*m.N*m.TA, 3*m.TA, m.TM*1.3));
+  const W = div*10, s = div*0.6;
+  // grid
+  g.strokeStyle='#1d2622'; g.lineWidth=1;
+  for(let i=0;i<=10;i++){ const x=Math.round(i*w/10)+.5; g.beginPath(); g.moveTo(x,0); g.lineTo(x,h); g.stroke(); }
+  for(let j=0;j<=6;j++){ const y=Math.round(j*h/6)+.5; g.beginPath(); g.moveTo(0,y); g.lineTo(w,y); g.stroke(); }
+  g.strokeStyle='#2c3a34'; g.beginPath(); g.moveTo(0,h/2+.5); g.lineTo(w,h/2+.5); g.stroke();
+  const X = t => Math.min(w, Math.max(0, t/W*w));
+  const lane = h/3, Y = (k,v) => k*lane + lane*(0.82 - 0.64*v);
+  const trace = (col, pts) => { g.strokeStyle=col; g.lineWidth=1.6; g.lineJoin='round'; g.beginPath(); pts.forEach(([t,v,k],i)=>{ const x=X(t), y=Y(k,v); i?g.lineTo(x,y):g.moveTo(x,y); }); g.stroke(); };
+  // CH1 astable output: falls at s + k*TA, low for tl
+  const p1=[]; let kmin = -Math.ceil(s/m.TA)-1;
+  p1.push([0,1,0]);
+  for(let k=kmin; s+k*m.TA < W && p1.length<60000; k++){
+    const tf=s+k*m.TA, tr=tf+m.tl; if(tr<0) continue;
+    p1.push([tf,1,0],[tf,0,0],[tr,0,0],[tr,1,0]);
+  }
+  p1.push([W,1,0]);
+  // mono pulses
+  const P = m.N*m.TA, starts=[]; for(let j=-2; s+j*P < W; j++) starts.push(s+j*P);
+  const p3=[[0,0,2]], p2=[[0,0,1]];
+  for(const t0 of starts){
+    const t1=t0+m.TM; if(t1<0) continue;
+    p3.push([t0,0,2],[t0,1,2],[t1,1,2],[t1,0,2]);
+    const n=48; p2.push([t0,0,1]);
+    for(let i=1;i<=n;i++){ const t=t0+m.TM*i/n; p2.push([t, m.tau>0 ? Math.min(2/3,1-Math.exp(-(t-t0)/m.tau)) : 2/3, 1]); }
+    p2.push([t1,0,1]);
+  }
+  p3.push([W,0,2]); p2.push([W,0,1]);
+  // 2/3 Vcc reference for CH2
+  g.setLineDash([4,4]); g.strokeStyle='rgba(34,211,238,.35)'; g.lineWidth=1; g.beginPath(); g.moveTo(0,Y(1,2/3)); g.lineTo(w,Y(1,2/3)); g.stroke(); g.setLineDash([]);
+  g.fillStyle='rgba(34,211,238,.6)'; g.font='10px "JetBrains Mono",monospace'; g.fillText('⅔ Vcc', w-44, Y(1,2/3)-4);
+  trace('#f5d90a', p1); trace('#22d3ee', p2); trace('#f472b6', p3);
+  // trigger marker
+  g.fillStyle='#f472b6'; const tx=X(s); g.beginPath(); g.moveTo(tx-5,0); g.lineTo(tx+5,0); g.lineTo(tx,7); g.fill();
+  const lbl = (k,t)=>{ g.fillStyle='#9fb0a6'; g.fillText(t, 6, k*lane+14); };
+  lbl(0,'CH1'); lbl(1,'CH2'); lbl(2,'CH3');
+  document.getElementById('tb').textContent = `${fmtT(div)}/дел · окно ${fmtT(W)} · в окне ${Math.round(W/m.TA)} запусков`;
+}
+
+/* ---------------- staircase ---------------- */
+const stair = document.getElementById('stair');
+function drawStair(m){
+  const {g,w,h} = fitCanvas(stair);
+  g.clearRect(0,0,w,h);
+  const L=52, R=12, T=10, B=28, pw=w-L-R, ph=h-T-B;
+  const xs=[], fo=[], fm=[];
+  for(let i=0;i<=pw;i++){ const p=i/pw, mm=model(S.p1,p); xs.push(p); fo.push(mm.fout); fm.push(1/mm.TM); }
+  let fmax = model(S.p1,0).fA*1.15, fmin = Math.min(...fo)*0.8;
+  const lmin=Math.log10(fmin), lmax=Math.log10(fmax);
+  const Y = f => T + ph*(1-(Math.log10(Math.min(fmax,Math.max(fmin,f)))-lmin)/(lmax-lmin));
+  const X = p => L + p*pw;
+  g.font='11px "JetBrains Mono",monospace'; g.textBaseline='middle';
+  // y grid: 1,2,5 decades
+  for(let e=Math.floor(lmin); e<=Math.ceil(lmax); e++) for(const k of [1,2,5]){
+    const f=k*Math.pow(10,e); if(f<fmin||f>fmax) continue; const y=Math.round(Y(f))+.5;
+    g.strokeStyle=C['--line']; g.lineWidth=1; g.beginPath(); g.moveTo(L,y); g.lineTo(L+pw,y); g.stroke();
+    g.fillStyle=C['--muted']; g.textAlign='right'; g.fillText(f>=1000?(f/1000)+'k':String(f), L-6, y);
+  }
+  g.textAlign='center'; g.textBaseline='top';
+  for(let r=0;r<=5;r++){ const x=Math.round(X(r/5))+.5; g.strokeStyle=C['--line']; g.beginPath(); g.moveTo(x,T+ph); g.lineTo(x,T+ph+4); g.stroke(); g.fillStyle=C['--muted']; g.fillText(r*100+'k', x, T+ph+7); }
+  g.textAlign='left'; g.fillText('VR2, Ом', L+pw-58, T+ph+7>h-14?h-14:T+ph+7);
+  // 1/TM dashed
+  g.setLineDash([4,4]); g.strokeStyle=C['--muted']; g.lineWidth=1.2; g.beginPath();
+  fm.forEach((f,i)=>{ const x=X(xs[i]), y=Y(f); i?g.lineTo(x,y):g.moveTo(x,y); }); g.stroke(); g.setLineDash([]);
+  // steps
+  g.strokeStyle=C['--accent']; g.lineWidth=2; g.beginPath();
+  fo.forEach((f,i)=>{ const x=X(xs[i]), y=Y(f); if(!i) g.moveTo(x,y); else { g.lineTo(x, Y(fo[i-1])); g.lineTo(x,y); } }); g.stroke();
+  // current
+  const cx=X(S.p2), cy=Y(m.fout);
+  g.fillStyle=C['--panel']; g.strokeStyle=C['--accent']; g.lineWidth=2.5; g.beginPath(); g.arc(cx,cy,5.5,0,Math.PI*2); g.fill(); g.stroke();
+  // axes
+  g.strokeStyle=C['--ink']; g.lineWidth=1; g.beginPath(); g.moveTo(L+.5,T); g.lineTo(L+.5,T+ph+.5); g.lineTo(L+pw,T+ph+.5); g.stroke();
+  let steps=0; for(let i=1;i<fo.length;i++) if(fo[i]!==fo[i-1]) steps++;
+  document.getElementById('stair-l').textContent = `ступеней на полном ходе VR2: ${steps+1} · сейчас N = ${m.N}`;
+}
+
+/* ---------------- check table ---------------- */
+const POINTS = [
+  ['T1',1.00,0.02],['T2',0.50,0.02],['T3',0.10,0.02],['T4',0.10,0.30],['T5',0.10,1.00],['T6',0.50,0.50]
+];
+let meas = store.get('meas', {});
+function buildCheck(){
+  const tb = document.querySelector('#chk tbody'); tb.innerHTML='';
+  const cfg = {...S};
+  POINTS.forEach(([id,a,b])=>{
+    const m = model(a,b,cfg);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="pos">${id}</td><td class="num">${fmtR(a*VR+(cfg.rs?RSV:0))}</td><td class="num">${fmtR(b*VR+(cfg.rs?RSV:0))}</td>
+      <td class="num">${fmtHz(m.fA)}</td><td class="num">${fmtT(m.TM)}</td><td class="num">${m.N}</td><td class="num"><b>${fmtHz(m.fout)}</b></td>
+      <td><input type="number" min="0" step="any" id="meas-${id}" aria-label="Измерено в точке ${id}, Гц" value="${meas[id]??''}"></td><td class="num" id="dev-${id}">—</td>
+      <td><button data-set="${a},${b}" style="font-size:12.5px;padding:3px 8px">На стенд</button></td>`;
+    tb.appendChild(tr);
+    const inp = tr.querySelector('input'), dev = tr.querySelector('#dev-'+id);
+    const upd = ()=>{ const v=parseFloat(inp.value); if(!(v>0)){ dev.textContent='—'; dev.className='num'; return; }
+      const d=(v-m.fout)/m.fout*100; dev.textContent=(d>0?'+':'')+d.toFixed(1)+' %'; dev.className='num '+(Math.abs(d)<=15?'dev-ok':'dev-bad'); };
+    inp.addEventListener('input', ()=>{ meas[id]=inp.value; store.set('meas',meas); upd(); });
+    upd();
+  });
+  tb.querySelectorAll('button[data-set]').forEach(b=> b.addEventListener('click', ()=>{ const [a,c]=b.dataset.set.split(',').map(Number); S.p1=a; S.p2=c; update(); document.getElementById('bench').scrollIntoView({behavior:'smooth'}); }));
+}
+
+/* ---------------- wiring ---------------- */
+const draw1 = knob(document.getElementById('k1'), ()=>S.p1, v=>{ S.p1=v; update(); });
+const draw2 = knob(document.getElementById('k2'), ()=>S.p2, v=>{ S.p2=v; update(); });
+const $ = id => document.getElementById(id);
+$('variant').value=S.variant; $('outmode').value=S.out; $('rs').checked=S.rs; $('vol').value=S.vol;
+$('variant').addEventListener('change', e=>{ S.variant=e.target.value; buildCheck(); update(); });
+$('outmode').addEventListener('change', e=>{ S.out=e.target.value; update(); });
+$('rs').addEventListener('change', e=>{ S.rs=e.target.checked; buildCheck(); update(); });
+$('vol').addEventListener('input', e=>{ S.vol=+e.target.value; update(); });
+document.querySelectorAll('.presets button').forEach(b=> b.addEventListener('click', ()=>{ const [a,c]=b.dataset.p.split(',').map(Number); S.p1=a; S.p2=c; update(); }));
+
+let raf=0;
+function update(){
+  const m = model(S.p1,S.p2);
+  draw1(); draw2();
+  $('k1v').textContent = fmtR(m.RA);
+  $('k2v').textContent = fmtR(m.RM);
+  $('r-fa').textContent = fmtHz(m.fA);
+  $('r-tm').textContent = fmtT(m.TM);
+  $('r-n').textContent = '÷ '+m.N;
+  $('r-fo').textContent = fmtHz(m.fout);
+  $('r-d').textContent = Math.round(m.duty*100)+' %';
+  $('r-note').innerHTML = m.N===1 ? 'N = 1: ждущий не успевает делить' : `f<sub>A</sub> / ${m.N}`;
+  $('warn').hidden = S.rs || (S.p1>0.01 && S.p2>0.01);
+  pushAudio();
+  store.set('state', S);
+  cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(()=>{ drawScope(m); drawStair(m); });
+}
+function redraw(){ readColors(); update(); }
+readColors(); buildCheck(); update();
+window.addEventListener('resize', ()=> update());
+try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw); }catch(e){}
+new MutationObserver(redraw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>update());
+})();
+</script>
+
+</body>
+</html>
