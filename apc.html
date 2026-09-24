@@ -67,6 +67,7 @@ select,input[type=number]{font:inherit;font-size:14px;background:var(--bg);color
 input[type=range]{width:100%;accent-color:var(--accent)}
 .check{display:flex;gap:8px;align-items:flex-start;font-size:13.5px}
 .check input{margin-top:3px;accent-color:var(--accent)}
+.field label.check{font-family:var(--display);font-size:13.5px;color:var(--ink)}
 button{font:inherit;font-size:14px;cursor:pointer;border-radius:4px;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:7px 12px}
 button:hover{border-color:var(--ink)}
 button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -129,6 +130,27 @@ ol.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;m
 ol.steps li::marker{font-family:var(--mono);color:var(--muted)}
 footer{font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
 footer a{color:var(--accent)}
+
+/* ---------- midi ---------- */
+.midi{display:flex;flex-direction:column;gap:14px}
+.midi-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.midi-head .row select{width:auto}
+.midi-status{font-size:13.5px;color:var(--muted)}
+.midi-status.ok{color:var(--ok)} .midi-status.bad{color:var(--warn)}
+.midi-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 20px;align-items:start}
+@media (max-width:860px){.midi-grid{grid-template-columns:1fr}}
+.cc-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;font-size:13.5px}
+.cc-row .mono{font-size:12.5px;color:var(--muted);min-width:52px;text-align:right}
+.cc-row button{font-size:12.5px;padding:3px 9px}
+.cc-row button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.kbd{position:relative;height:118px;user-select:none;touch-action:none;border-radius:4px;overflow:hidden;border:1px solid var(--line)}
+.kbd .k{position:absolute;top:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;font-family:var(--mono);font-size:10.5px;cursor:pointer}
+.kbd .w{height:100%;background:var(--panel);border-right:1px solid var(--line);color:var(--muted)}
+.kbd .b{height:62%;background:var(--ink);color:var(--bg);z-index:2;border-radius:0 0 3px 3px;font-size:9.5px}
+.kbd .k.on{background:var(--accent);color:var(--accent-ink)}
+.midi-foot{justify-content:space-between;font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+.midi-foot b{color:var(--ink);font-weight:600}
+#m-target b{color:var(--accent)}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 
@@ -216,6 +238,42 @@ footer a{color:var(--accent)}
         <p class="hint">Сплошная — f<sub>OUT</sub> от положения VR2; пунктир — 1/T<sub>M</sub>, куда «хотел бы» идти тон без квантования. Точка — текущее положение.</p>
       </div>
     </div>
+  </div>
+  <div class="panel midi" id="midi" aria-labelledby="midi-h">
+    <div class="midi-head">
+      <div><span class="eyebrow">MIDI</span><h3 id="midi-h">Игра с клавиатуры</h3></div>
+      <div class="row">
+        <button id="midi-connect">Подключить MIDI</button>
+        <select id="midi-in" aria-label="MIDI-вход"><option value="all">Все входы</option></select>
+        <select id="midi-ch" aria-label="MIDI-канал"><option value="0">Omni</option></select>
+      </div>
+    </div>
+    <p class="midi-status" id="midi-status">MIDI не подключён. Играть можно и с клавиатуры компьютера: ряд A W S E D F T G Y H U J K, Z / X — октава ниже / выше.</p>
+    <div class="midi-grid">
+      <div class="field">
+        <label for="midi-mode">Что делает нота</label>
+        <select id="midi-mode">
+          <option value="notes">Ноты · ровный строй</option>
+          <option value="hw">Ноты · как железо</option>
+          <option value="free">Только гейт, тон — ручками</option>
+        </select>
+        <span class="hint" id="mode-hint"></span>
+      </div>
+      <div class="field">
+        <span class="lbl">Контроллеры (CC) · Learn — нажмите и покрутите ручку</span>
+        <div class="cc-row"><span>VR1 · Pitch</span><span class="mono" id="cc-p1">CC 74</span><button data-learn="p1" aria-pressed="false">Learn</button></div>
+        <div class="cc-row"><span id="cc-p2-name">VR2 · скважность</span><span class="mono" id="cc-p2">CC 1</span><button data-learn="p2" aria-pressed="false">Learn</button></div>
+        <div class="cc-row"><span>Громкость</span><span class="mono" id="cc-vol">CC 7</span><button data-learn="vol" aria-pressed="false">Learn</button></div>
+      </div>
+      <div class="field">
+        <label for="bend">Pitch bend</label>
+        <select id="bend"><option value="2">± 2 полутона</option><option value="12">± 12 полутонов</option></select>
+        <label class="check"><input type="checkbox" id="gate"> <span>Звук только пока нажата нота</span></label>
+        <label class="check"><input type="checkbox" id="qwerty" checked> <span>Играть с клавиатуры компьютера</span></label>
+      </div>
+    </div>
+    <div class="kbd" id="kbd" aria-label="Экранная клавиатура"></div>
+    <div class="row midi-foot"><span id="m-target">Нота: —</span><span id="m-last">—</span><span>Октава: <b id="m-oct">3</b></span></div>
   </div>
 </section>
 
@@ -431,7 +489,7 @@ NC    : выв. 3, 11 (CV; можно 10 нФ на землю)</pre>
 (()=>{
 'use strict';
 /* ---------------- model ---------------- */
-const S = { p1:0.16, p2:0.06, variant:'kaustic', out:'line', rs:false, vol:0.35 };
+const S = { p1:0.16, p2:0.06, variant:'kaustic', out:'line', rs:false, vol:0.35, mode:'notes', gate:false, gateTouched:false, duty:0.5, bendRange:2, ch:0, qwerty:true, kbOct:3, cc:{p1:74,p2:1,vol:7} };
 const VR = 500e3, R1 = 1e3, C1 = 10e-9, RSV = 330;
 const C2of = v => v==='mims' ? 10e-9 : 100e-9;
 
@@ -456,6 +514,7 @@ const store = {
   set(k,v){ try{ localStorage.setItem('apc.'+k, JSON.stringify(v)); }catch(e){} }
 };
 Object.assign(S, store.get('state', {}));
+let held = [], bend = 0, target = null;
 
 /* ---------------- knobs ---------------- */
 function knob(el, get, set){
@@ -534,7 +593,8 @@ function audioParams(){
   // line: 10uF into 14.7k ≈ 1.1 Hz; speaker: 10uF into 8 ohm ≈ 2 kHz
   const fc = S.out==='spk' ? 1/(2*Math.PI*8*10e-6) : 1/(2*Math.PI*14.7e3*10e-6);
   const gain = S.vol * (S.out==='spk' ? 0.9 : 0.55);
-  return {TA:m.TA, TM:m.TM, tl:m.tl, fc, gain: running?gain:0};
+  const gated = S.gate && !held.length;
+  return {TA:m.TA, TM:m.TM, tl:m.tl, fc, gain: (running && !gated)?gain:0};
 }
 function pushAudio(){ if(node && node.port) node.port.postMessage(audioParams()); else if(node && node._p) Object.assign(node._p, audioParams()); }
 async function startAudio(){
@@ -570,9 +630,9 @@ const powerBtn = document.getElementById('power');
 powerBtn.addEventListener('click', async ()=>{
   running = !running;
   powerBtn.setAttribute('aria-pressed', running);
-  document.getElementById('power-t').textContent = running ? 'S1 · Выключить звук' : 'S1 · Включить звук';
-  if(running){ try{ await startAudio(); }catch(e){ running=false; powerBtn.setAttribute('aria-pressed',false); document.getElementById('power-t').textContent='Звук недоступен в этом браузере'; } }
-  pushAudio();
+  if(running){ try{ await startAudio(); }catch(e){ running=false; powerBtn.setAttribute('aria-pressed',false); } }
+  update();
+  if(!ctx && !running) document.getElementById('power-t').textContent='Звук недоступен в этом браузере';
 });
 
 /* ---------------- theme colors for canvas ---------------- */
@@ -701,7 +761,7 @@ function buildCheck(){
 
 /* ---------------- wiring ---------------- */
 const draw1 = knob(document.getElementById('k1'), ()=>S.p1, v=>{ S.p1=v; update(); });
-const draw2 = knob(document.getElementById('k2'), ()=>S.p2, v=>{ S.p2=v; update(); });
+const draw2 = knob(document.getElementById('k2'), ()=>S.p2, v=>{ S.p2=v; if(S.mode==='notes'){ const m=model(S.p1,S.p2); S.duty=Math.min(0.95,Math.max(0.02,m.duty)); if(held.length){ applyNote(); return; } } update(); });
 const $ = id => document.getElementById(id);
 $('variant').value=S.variant; $('outmode').value=S.out; $('rs').checked=S.rs; $('vol').value=S.vol;
 $('variant').addEventListener('change', e=>{ S.variant=e.target.value; buildCheck(); update(); });
@@ -709,6 +769,146 @@ $('outmode').addEventListener('change', e=>{ S.out=e.target.value; update(); });
 $('rs').addEventListener('change', e=>{ S.rs=e.target.checked; buildCheck(); update(); });
 $('vol').addEventListener('input', e=>{ S.vol=+e.target.value; update(); });
 document.querySelectorAll('.presets button').forEach(b=> b.addEventListener('click', ()=>{ const [a,c]=b.dataset.p.split(',').map(Number); S.p1=a; S.p2=c; update(); }));
+
+/* ---------------- MIDI & keyboard ---------------- */
+const NOTE_NAMES=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
+const noteName = n => NOTE_NAMES[((n%12)+12)%12] + (Math.floor(n/12)-1);
+const noteFreq = n => 440*Math.pow(2,(n-69+bend)/12);
+const clamp01 = v => Math.min(1, Math.max(0, v));
+const MODE_HINT = {
+  notes:'VR1 и VR2 подбираются под ноту, строй точный. CC «VR2» меняет скважность, то есть тембр, а не высоту.',
+  hw:'Нота двигает только VR1, VR2 стоит где стоит. Крутите VR2 при зажатой ноте — услышите ступени. Высокие ноты при длинном импульсе недостижимы.',
+  free:'Нота только открывает звук. Высоту и ступени задают ручки или CC.'
+};
+// Exact VR1 for period P at the current T_M: need N with floor(T_M/T_A)+1 = N and T_A = P/N.
+function solveVR1(P, p2){
+  const rs = S.rs ? RSV : 0, TM = model(0,p2).TM;
+  const TAmin = 0.693*(rs+2*R1)*C1, TAmax = 0.693*(VR+rs+2*R1)*C1;
+  const lo = Math.max(1, Math.ceil(P/TAmax - 1e-9)), hi = Math.floor(P/TAmin);
+  for(let N=lo; N<=hi && N<lo+20000; N++){
+    const TA = P/N; if(Math.floor(TM/TA)+1!==N) continue;
+    const p1 = (TA/(0.693*C1) - 2*R1 - rs)/VR; if(p1<0||p1>1) continue;
+    const f = model(p1,p2).fout; if(Math.abs(1200*Math.log2(f*P))<0.5) return p1;
+  }
+  return null;
+}
+function nearestVR1(f, p2){
+  let best=0, err=Infinity;
+  for(let i=0;i<=4000;i++){ const p=i/4000, e=Math.abs(Math.log(model(p,p2).fout/f)); if(e<err){err=e;best=p;} }
+  return best;
+}
+function applyNote(){
+  if(!held.length || S.mode==='free'){ target = held.length ? {n:held[held.length-1], f:null} : null; update(); return; }
+  const n = held[held.length-1], f = noteFreq(n), P = 1/f;
+  if(S.mode==='notes'){
+    // below ≈ 290 Гц астабильный не может сам дать период P: нужно N ≥ P/T_A,max,
+    // а деление на N возможно только при скважности ≥ 1 − 1/N — низкие ноты «толще».
+    const rs = S.rs ? RSV : 0, C2 = C2of(S.variant);
+    const Nlo = Math.max(1, Math.ceil(P/(0.693*(VR+rs+2*R1)*C1) - 1e-9));
+    const d = Math.min(0.97, Math.max(S.duty, 1 - 0.75/Nlo));
+    S.p2 = clamp01((d*P/1.1/C2 - rs)/VR);
+  }
+  const p1 = solveVR1(P, S.p2);
+  S.p1 = p1==null ? nearestVR1(f, S.p2) : p1;
+  target = {n, f};
+  update();
+}
+function noteOn(n){
+  if(!S.gateTouched && !S.gate){ S.gate = true; $('gate').checked = true; }
+  held = held.filter(x=>x!==n); held.push(n); applyNote(); paintKeys();
+}
+function noteOff(n){ held = held.filter(x=>x!==n); if(held.length) applyNote(); else { target=null; update(); } paintKeys(); }
+function allOff(){ held=[]; target=null; update(); paintKeys(); }
+
+let learn = null;
+function paintCC(){
+  $('cc-p1').textContent='CC '+S.cc.p1; $('cc-p2').textContent='CC '+S.cc.p2; $('cc-vol').textContent='CC '+S.cc.vol;
+  document.querySelectorAll('[data-learn]').forEach(b=> b.setAttribute('aria-pressed', b.dataset.learn===learn));
+  $('cc-p2-name').textContent = S.mode==='notes' ? 'VR2 · скважность' : 'VR2 · Step';
+  $('mode-hint').textContent = MODE_HINT[S.mode];
+}
+document.querySelectorAll('[data-learn]').forEach(b=> b.addEventListener('click', ()=>{ learn = learn===b.dataset.learn ? null : b.dataset.learn; paintCC(); }));
+function onCC(num, val){
+  if(learn){ S.cc[learn]=num; learn=null; paintCC(); store.set('state',S); return; }
+  const v = val/127;
+  if(num===S.cc.p2){
+    if(S.mode==='notes'){ S.duty = 0.02 + 0.93*v; if(held.length) applyNote(); else { S.p2 = clamp01(v*v); update(); } }
+    else { S.p2 = v*v; update(); }            // квадратичная кривая ≈ логарифмический A500K
+  }
+  if(num===S.cc.p1 && (S.mode==='free' || !held.length)){ S.p1 = v*v; update(); }
+  if(num===S.cc.vol){ S.vol = v; $('vol').value = v; update(); }
+  if(num===120 || num===123) allOff();
+}
+function onMidi(e){
+  const [st,d1,d2=0] = e.data, type = st & 0xf0, ch = st & 0x0f;
+  if(type===0xF0 || st>=0xF8) return;
+  if(S.ch && ch!==S.ch-1) return;
+  if(type===0x90 && d2>0){ noteOn(d1); $('m-last').textContent=`Note On ${noteName(d1)} · vel ${d2} · кан. ${ch+1}`; }
+  else if(type===0x80 || type===0x90){ noteOff(d1); $('m-last').textContent=`Note Off ${noteName(d1)} · кан. ${ch+1}`; }
+  else if(type===0xB0){ onCC(d1,d2); $('m-last').textContent=`CC ${d1} = ${d2} · кан. ${ch+1}`; }
+  else if(type===0xE0){ bend = (((d2<<7)|d1)-8192)/8192*S.bendRange; if(held.length) applyNote(); $('m-last').textContent=`Pitch bend ${bend>=0?'+':''}${bend.toFixed(2)} п/т`; }
+}
+let access = null;
+function setStatus(t, cls){ const el=$('midi-status'); el.textContent=t; el.className='midi-status'+(cls?' '+cls:''); }
+function bindInputs(){
+  const sel = $('midi-in'), keep = sel.value;
+  sel.innerHTML = '<option value="all">Все входы</option>';
+  const ins = access ? [...access.inputs.values()] : [];
+  ins.forEach(i=>{ const o=document.createElement('option'); o.value=i.id; o.textContent=i.name||i.id; sel.appendChild(o); });
+  if([...sel.options].some(o=>o.value===keep)) sel.value = keep;
+  ins.forEach(i=> i.onmidimessage = (sel.value==='all' || sel.value===i.id) ? onMidi : null);
+  if(access) setStatus(ins.length ? `MIDI подключён: ${ins.map(i=>i.name).join(', ')}. Нажмите S1 и играйте.` : 'MIDI доступен, но устройств нет. Подключите клавиатуру — список обновится сам.', ins.length?'ok':'');
+}
+$('midi-in').addEventListener('change', bindInputs);
+$('midi-connect').addEventListener('click', async ()=>{
+  if(!navigator.requestMIDIAccess){ setStatus('Этот браузер не поддерживает Web MIDI (например, Safari). Откройте apc.html в Chrome, Edge или Firefox. Клавиатура компьютера работает и здесь.','bad'); return; }
+  try{ access = await navigator.requestMIDIAccess({sysex:false}); access.onstatechange = bindInputs; bindInputs(); $('midi-connect').textContent='MIDI подключён'; }
+  catch(err){ setStatus('Доступ к MIDI запрещён. Если страница открыта во встроенном окне, откройте apc.html из папки проекта в Chrome. Клавиатура компьютера работает и здесь.','bad'); }
+});
+for(let c=1;c<=16;c++){ const o=document.createElement('option'); o.value=c; o.textContent='Канал '+c; $('midi-ch').appendChild(o); }
+$('midi-ch').value = S.ch; $('midi-ch').addEventListener('change', e=>{ S.ch=+e.target.value; allOff(); });
+$('midi-mode').value = S.mode; $('midi-mode').addEventListener('change', e=>{ S.mode=e.target.value; paintCC(); applyNote(); });
+$('bend').value = S.bendRange; $('bend').addEventListener('change', e=>{ S.bendRange=+e.target.value; });
+$('gate').checked = S.gate; $('gate').addEventListener('change', e=>{ S.gate=e.target.checked; S.gateTouched=true; update(); });
+$('qwerty').checked = S.qwerty; $('qwerty').addEventListener('change', e=>{ S.qwerty=e.target.checked; store.set('state',S); });
+
+// computer keyboard: physical key codes, so it works in any layout
+const KEYS = {KeyA:0,KeyW:1,KeyS:2,KeyE:3,KeyD:4,KeyF:5,KeyT:6,KeyG:7,KeyY:8,KeyH:9,KeyU:10,KeyJ:11,KeyK:12,KeyO:13,KeyL:14,KeyP:15,Semicolon:16};
+const KEY_LABEL = Object.fromEntries(Object.entries(KEYS).map(([k,v])=>[v, k==='Semicolon'?';':k.slice(3)]));
+const down = new Map();
+const typing = el => el && (el.tagName==='INPUT' || el.tagName==='SELECT' || el.tagName==='TEXTAREA');
+document.addEventListener('keydown', e=>{
+  if(!S.qwerty || e.repeat || e.metaKey || e.ctrlKey || e.altKey || typing(e.target)) return;
+  if(e.code==='KeyZ'){ S.kbOct=Math.max(0,S.kbOct-1); buildKbd(); return; }
+  if(e.code==='KeyX'){ S.kbOct=Math.min(7,S.kbOct+1); buildKbd(); return; }
+  if(!(e.code in KEYS)) return;
+  e.preventDefault(); const n = 12*(S.kbOct+1)+KEYS[e.code]; down.set(e.code,n); noteOn(n);
+});
+document.addEventListener('keyup', e=>{ if(down.has(e.code)){ noteOff(down.get(e.code)); down.delete(e.code); } });
+window.addEventListener('blur', ()=>{ if(down.size){ down.clear(); allOff(); } });
+
+// on-screen keyboard: two octaves from the current one
+function buildKbd(){
+  const kb = $('kbd'); kb.innerHTML=''; const base = 12*(S.kbOct+1), whites=[0,2,4,5,7,9,11], W = 100/14;
+  for(let o=0;o<2;o++) whites.forEach((s,i)=>{
+    const n = base+12*o+s, el = document.createElement('div');
+    el.className='k w'; el.style.left=((o*7+i)*W)+'%'; el.style.width=W+'%'; el.dataset.n=n;
+    el.textContent = (s===0 ? noteName(n)+' ' : '') + (KEY_LABEL[12*o+s]??''); kb.appendChild(el);
+  });
+  for(let o=0;o<2;o++) [[1,1],[3,2],[6,4],[8,5],[10,6]].forEach(([s,after])=>{
+    const n = base+12*o+s, el = document.createElement('div');
+    el.className='k b'; el.style.left=((o*7+after)*W - W*0.3)+'%'; el.style.width=(W*0.6)+'%'; el.dataset.n=n;
+    el.textContent = KEY_LABEL[12*o+s]??''; kb.appendChild(el);
+  });
+  $('m-oct').textContent = S.kbOct; paintKeys(); store.set('state',S);
+}
+function paintKeys(){ const on = new Set(held); $('kbd').querySelectorAll('.k').forEach(k=> k.classList.toggle('on', on.has(+k.dataset.n))); }
+let ptrNote = null;
+$('kbd').addEventListener('pointerdown', e=>{ const k=e.target.closest('.k'); if(!k) return; $('kbd').setPointerCapture(e.pointerId); ptrNote=+k.dataset.n; noteOn(ptrNote); });
+$('kbd').addEventListener('pointermove', e=>{ if(ptrNote==null) return; const k=document.elementFromPoint(e.clientX,e.clientY)?.closest?.('.k'); if(k && +k.dataset.n!==ptrNote){ noteOff(ptrNote); ptrNote=+k.dataset.n; noteOn(ptrNote); } });
+const ptrUp = ()=>{ if(ptrNote!=null){ noteOff(ptrNote); ptrNote=null; } };
+$('kbd').addEventListener('pointerup', ptrUp); $('kbd').addEventListener('pointercancel', ptrUp);
+buildKbd(); paintCC();
 
 let raf=0;
 function update(){
@@ -723,6 +923,10 @@ function update(){
   $('r-d').textContent = Math.round(m.duty*100)+' %';
   $('r-note').innerHTML = m.N===1 ? 'N = 1: ждущий не успевает делить' : `f<sub>A</sub> / ${m.N}`;
   $('warn').hidden = S.rs || (S.p1>0.01 && S.p2>0.01);
+  if(target && target.f){ const c = 1200*Math.log2(m.fout/target.f); $('m-target').innerHTML = `Нота: <b>${noteName(target.n)}</b> ${fmtHz(target.f)} → ${fmtHz(m.fout)} · ${Math.abs(c)<1?'точно':(c>0?'+':'')+c.toFixed(0)+' ц'+(Math.abs(c)>50?' · недостижимо при этих C2/VR2':'')}`; }
+  else if(target){ $('m-target').innerHTML = `Нота: <b>${noteName(target.n)}</b> · тон задают ручки`; }
+  else $('m-target').textContent = 'Нота: —';
+  $('power-t').textContent = !running ? 'S1 · Включить звук' : (S.gate && !held.length ? 'S1 · Звук включён · ждёт ноту' : 'S1 · Выключить звук');
   pushAudio();
   store.set('state', S);
   cancelAnimationFrame(raf);
