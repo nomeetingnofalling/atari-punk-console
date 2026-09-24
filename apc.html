@@ -55,7 +55,7 @@ section{display:flex;flex-direction:column;gap:18px}
 .controls{display:flex;flex-direction:column;gap:18px}
 .knobs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .knob-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
-.knob{width:108px;height:108px;position:relative;touch-action:none;cursor:ns-resize;border-radius:50%;outline:none}
+.knob{width:108px;height:108px;flex:none;position:relative;touch-action:none;cursor:ns-resize;border-radius:50%;outline:none}
 .knob:focus-visible{box-shadow:0 0 0 3px var(--accent)}
 .knob svg{width:100%;height:100%;display:block}
 .knob-name{font-weight:700;font-size:14px}
@@ -151,6 +151,21 @@ footer a{color:var(--accent)}
 .midi-foot{justify-content:space-between;font-family:var(--mono);font-size:12.5px;color:var(--muted)}
 .midi-foot b{color:var(--ink);font-weight:600}
 #m-target b{color:var(--accent)}
+
+/* ---------- delay ---------- */
+.delay{display:flex;flex-direction:column;gap:14px}
+.delay-knobs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+@media (max-width:620px){.delay-knobs{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.knob.sm{width:76px;height:76px}
+.dk{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
+.dk .knob-name{font-size:13px}
+.dk .learn{display:flex;gap:6px;align-items:center;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.dk .learn button{font-size:11.5px;padding:2px 7px}
+[data-learn][aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.toggle[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.toggle.freeze[aria-pressed="true"]{background:#0e7490;border-color:#0e7490;color:#fff}
+.delay-side{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.delay canvas{width:100%;height:120px;display:block}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 
@@ -239,6 +254,24 @@ footer a{color:var(--accent)}
       </div>
     </div>
   </div>
+  <div class="panel delay" id="delay" aria-labelledby="delay-h">
+    <div class="midi-head">
+      <div><span class="eyebrow">Эффект после выв. 9</span><h3 id="delay-h">Delay · ленточное эхо</h3></div>
+      <div class="delay-side">
+        <button class="toggle" id="d-on" aria-pressed="true">Delay вкл.</button><span class="learn mono hint"><span data-cc="dOn">CC 80</span> <button data-learn="dOn" aria-pressed="false" style="font-size:11.5px;padding:2px 7px">Learn</button></span>
+        <button class="toggle freeze" id="d-freeze" aria-pressed="false">Freeze</button><span class="learn mono hint"><span data-cc="dFreeze">CC 64</span> <button data-learn="dFreeze" aria-pressed="false" style="font-size:11.5px;padding:2px 7px">Learn</button></span>
+      </div>
+    </div>
+    <div class="delay-knobs">
+        <div class="dk"><div class="knob sm" id="dk-time" role="slider" tabindex="0" aria-label="Delay, Time" aria-valuemin="0" aria-valuemax="100"></div><span class="knob-name">Time</span><span class="knob-val" id="dv-time">—</span><span class="learn"><span data-cc="dTime">CC 12</span><button data-learn="dTime" aria-pressed="false">Learn</button></span></div>
+        <div class="dk"><div class="knob sm" id="dk-fb" role="slider" tabindex="0" aria-label="Delay, Feedback" aria-valuemin="0" aria-valuemax="100"></div><span class="knob-name">Feedback</span><span class="knob-val" id="dv-fb">—</span><span class="learn"><span data-cc="dFb">CC 13</span><button data-learn="dFb" aria-pressed="false">Learn</button></span></div>
+        <div class="dk"><div class="knob sm" id="dk-tone" role="slider" tabindex="0" aria-label="Delay, Tone" aria-valuemin="0" aria-valuemax="100"></div><span class="knob-name">Tone</span><span class="knob-val" id="dv-tone">—</span><span class="learn"><span data-cc="dTone">CC 14</span><button data-learn="dTone" aria-pressed="false">Learn</button></span></div>
+        <div class="dk"><div class="knob sm" id="dk-wow" role="slider" tabindex="0" aria-label="Delay, Wow" aria-valuemin="0" aria-valuemax="100"></div><span class="knob-name">Wow</span><span class="knob-val" id="dv-wow">—</span><span class="learn"><span data-cc="dWow">CC 15</span><button data-learn="dWow" aria-pressed="false">Learn</button></span></div>
+        <div class="dk"><div class="knob sm" id="dk-mix" role="slider" tabindex="0" aria-label="Delay, Mix" aria-valuemin="0" aria-valuemax="100"></div><span class="knob-name">Mix</span><span class="knob-val" id="dv-mix">—</span><span class="learn"><span data-cc="dMix">CC 91</span><button data-learn="dMix" aria-pressed="false">Learn</button></span></div>
+    </div>
+    <canvas id="echo" aria-label="Отводы эха во времени"></canvas>
+    <p class="hint">Задержка с насыщением и фильтром в петле обратной связи, как у ленты или PT2399: каждый повтор темнее предыдущего. Wow плавает временем задержки, при повороте Time тон «съезжает». Freeze замыкает петлю: звук крутится бесконечно, новые ноты не записываются. По умолчанию Freeze висит на педали сустейна (CC 64), пока она нажата.</p>
+  </div>
   <div class="panel midi" id="midi" aria-labelledby="midi-h">
     <div class="midi-head">
       <div><span class="eyebrow">MIDI</span><h3 id="midi-h">Игра с клавиатуры</h3></div>
@@ -261,9 +294,9 @@ footer a{color:var(--accent)}
       </div>
       <div class="field">
         <span class="lbl">Контроллеры (CC) · Learn — нажмите и покрутите ручку</span>
-        <div class="cc-row"><span>VR1 · Pitch</span><span class="mono" id="cc-p1">CC 74</span><button data-learn="p1" aria-pressed="false">Learn</button></div>
-        <div class="cc-row"><span id="cc-p2-name">VR2 · скважность</span><span class="mono" id="cc-p2">CC 1</span><button data-learn="p2" aria-pressed="false">Learn</button></div>
-        <div class="cc-row"><span>Громкость</span><span class="mono" id="cc-vol">CC 7</span><button data-learn="vol" aria-pressed="false">Learn</button></div>
+        <div class="cc-row"><span>VR1 · Pitch</span><span class="mono" data-cc="p1">CC 74</span><button data-learn="p1" aria-pressed="false">Learn</button></div>
+        <div class="cc-row"><span id="cc-p2-name">VR2 · скважность</span><span class="mono" data-cc="p2">CC 1</span><button data-learn="p2" aria-pressed="false">Learn</button></div>
+        <div class="cc-row"><span>Громкость</span><span class="mono" data-cc="vol">CC 7</span><button data-learn="vol" aria-pressed="false">Learn</button></div>
       </div>
       <div class="field">
         <label for="bend">Pitch bend</label>
@@ -489,7 +522,8 @@ NC    : выв. 3, 11 (CV; можно 10 нФ на землю)</pre>
 (()=>{
 'use strict';
 /* ---------------- model ---------------- */
-const S = { p1:0.16, p2:0.06, variant:'kaustic', out:'line', rs:false, vol:0.35, mode:'notes', gate:false, gateTouched:false, duty:0.5, bendRange:2, ch:0, qwerty:true, kbOct:3, cc:{p1:74,p2:1,vol:7} };
+const S = { p1:0.16, p2:0.06, variant:'kaustic', out:'line', rs:false, vol:0.35, mode:'notes', gate:false, gateTouched:false, duty:0.5, bendRange:2, ch:0, qwerty:true, kbOct:3, cc:{p1:74,p2:1,vol:7}, dl:{on:true,time:0.56,fb:0.45,tone:0.6,wow:0.2,mix:0.32} };
+const CC_DEF = {p1:74,p2:1,vol:7,dOn:80,dFreeze:64,dTime:12,dFb:13,dTone:14,dWow:15,dMix:91}, DL_DEF = {...S.dl};
 const VR = 500e3, R1 = 1e3, C1 = 10e-9, RSV = 330;
 const C2of = v => v==='mims' ? 10e-9 : 100e-9;
 
@@ -514,6 +548,7 @@ const store = {
   set(k,v){ try{ localStorage.setItem('apc.'+k, JSON.stringify(v)); }catch(e){} }
 };
 Object.assign(S, store.get('state', {}));
+S.cc = {...CC_DEF, ...(S.cc||{})}; S.dl = {...DL_DEF, ...(S.dl||{})};
 let held = [], bend = 0, target = null;
 
 /* ---------------- knobs ---------------- */
@@ -622,7 +657,7 @@ async function startAudio(){
       };
       node = sp;
     }
-    node.connect(ctx.destination);
+    buildFx(); node.connect(fx.dry); node.connect(fx.inG); applyDelay(true);
   }
   if(ctx.state!=='running') await ctx.resume();
 }
@@ -770,6 +805,81 @@ $('rs').addEventListener('change', e=>{ S.rs=e.target.checked; buildCheck(); upd
 $('vol').addEventListener('input', e=>{ S.vol=+e.target.value; update(); });
 document.querySelectorAll('.presets button').forEach(b=> b.addEventListener('click', ()=>{ const [a,c]=b.dataset.p.split(',').map(Number); S.p1=a; S.p2=c; update(); }));
 
+/* ---------------- Delay ---------------- */
+let fx = null, freeze = false;
+const DL = {
+  time: v => 0.02*Math.pow(100, v),          // 20 мс … 2 с, экспоненциально
+  fb:   v => 0.95*v,
+  tone: v => 500*Math.pow(36, v),            // 500 Гц … 18 кГц
+  wow:  v => v*v*0.008,                      // глубина плавания, с
+};
+function buildFx(){
+  const c = ctx, g = v => { const n=c.createGain(); n.gain.value=v; return n; };
+  fx = { dry:g(1), inG:g(1), wet:g(0.5), fbG:g(0.4), master:g(1) };
+  fx.delay = c.createDelay(2.5);
+  fx.lp = c.createBiquadFilter(); fx.lp.type='lowpass'; fx.lp.Q.value=0.5;
+  fx.hp = c.createBiquadFilter(); fx.hp.type='highpass'; fx.hp.frequency.value=70;
+  fx.sat = c.createWaveShaper(); const cur=new Float32Array(1024);
+  for(let i=0;i<1024;i++){ const x=i/511.5-1; cur[i]=Math.tanh(x*1.5)/1.5; }   // наклон 1 в нуле: петля не самовозбуждается
+  fx.sat.curve = cur; fx.sat.oversample='2x';
+  fx.lfo = c.createOscillator(); fx.lfo.frequency.value=0.7; fx.lfoG = g(0);
+  fx.flt = c.createOscillator(); fx.flt.frequency.value=6.3; fx.fltG = g(0);
+  fx.lfo.connect(fx.lfoG).connect(fx.delay.delayTime); fx.flt.connect(fx.fltG).connect(fx.delay.delayTime);
+  fx.lfo.start(); fx.flt.start();
+  fx.inG.connect(fx.delay); fx.delay.connect(fx.lp).connect(fx.hp).connect(fx.sat);
+  fx.sat.connect(fx.fbG).connect(fx.delay); fx.sat.connect(fx.wet).connect(fx.master);
+  fx.dry.connect(fx.master); fx.master.connect(c.destination);
+}
+const fmtTime = t => t>=1 ? t.toFixed(2)+' с' : Math.round(t*1000)+' мс';
+const dKnobs = {};
+['time','fb','tone','wow','mix'].forEach(k=>{
+  dKnobs[k] = knob($('dk-'+k), ()=>S.dl[k], v=>{ S.dl[k]=v; applyDelay(); });
+});
+$('d-on').addEventListener('click', ()=>{ S.dl.on=!S.dl.on; applyDelay(); });
+$('d-freeze').addEventListener('click', ()=>{ freeze=!freeze; applyDelay(); });
+function applyDelay(){
+  const d = S.dl, t = DL.time(d.time), fb = DL.fb(d.fb), fc = DL.tone(d.tone), w = DL.wow(d.wow);
+  Object.values(dKnobs).forEach(f=>f());
+  $('dv-time').textContent = fmtTime(t);
+  $('dv-fb').textContent = Math.round(fb*100)+' %';
+  $('dv-tone').textContent = fc>=1000 ? (fc/1000).toFixed(1)+' кГц' : Math.round(fc)+' Гц';
+  $('dv-wow').textContent = w<0.0001 ? 'выкл.' : (w*1000).toFixed(1)+' мс';
+  $('dv-mix').textContent = Math.round(d.mix*100)+' %';
+  $('d-on').setAttribute('aria-pressed', d.on); $('d-on').textContent = d.on ? 'Delay вкл.' : 'Delay выкл.';
+  $('d-freeze').setAttribute('aria-pressed', freeze);
+  if(fx){
+    const now = ctx.currentTime, set = (p,v,tc=0.03)=>p.setTargetAtTime(v, now, tc);
+    const wet = Math.sin(d.mix*Math.PI/2), dry = d.on ? Math.cos(d.mix*Math.PI/2) : 1;
+    set(fx.delay.delayTime, Math.max(0.005, t), 0.12);          // плавный «ленточный» съезд тона
+    set(fx.fbG.gain, freeze ? 1 : fb);
+    set(fx.inG.gain, (d.on && !freeze) ? 1 : 0);                 // выкл. — хвосты дозвучивают
+    set(fx.wet.gain, wet); set(fx.dry.gain, dry);
+    set(fx.lp.frequency, fc);
+    set(fx.lfoG.gain, w); set(fx.fltG.gain, w*0.08);
+  }
+  store.set('state', S);
+  drawEcho();
+}
+const echo = $('echo');
+function drawEcho(){
+  if(!C['--ink']) return;
+  const {g,w,h} = fitCanvas(echo); g.clearRect(0,0,w,h);
+  const d=S.dl, t=DL.time(d.time), fb=freeze?1:DL.fb(d.fb), wet=Math.sin(d.mix*Math.PI/2), dry=d.on?Math.cos(d.mix*Math.PI/2):1;
+  const span = Math.min(10, Math.max(1, t*8)), L=8, B=18, T=8, pw=w-2*L, ph=h-B-T;
+  const X = s => L + s/span*pw, Y = a => T + ph*(1-a);
+  g.font='10.5px "JetBrains Mono",monospace'; g.textBaseline='top'; g.textAlign='center';
+  const step = [0.05,0.1,0.2,0.5,1,2][[0.05,0.1,0.2,0.5,1,2].findIndex(s=>span/s<=10)] || 2;
+  for(let s=0;s<=span+1e-9;s+=step){ const x=Math.round(X(s))+.5; g.strokeStyle=C['--line']; g.beginPath(); g.moveTo(x,T); g.lineTo(x,T+ph); g.stroke(); g.fillStyle=C['--muted']; g.textAlign = s===0?'left':'center'; g.fillText(s<1?Math.round(s*1000)+' мс':s.toFixed(s%1?1:0)+' с', s===0?L:x, T+ph+4); }
+  g.strokeStyle=C['--ink']; g.beginPath(); g.moveTo(L,Y(0)+.5); g.lineTo(L+pw,Y(0)+.5); g.stroke();
+  const bar=(s,a,col)=>{ g.fillStyle=col; g.fillRect(X(s)-2, Y(a), 4, Y(0)-Y(a)); };
+  bar(0, dry, C['--ink']);
+  const col = freeze ? '#0e7490' : C['--accent'];
+  g.globalAlpha = d.on||freeze ? 1 : 0.35;
+  let a = wet, k = 1;
+  while(k*t <= span && a > 0.01 && k < 400){ bar(k*t, a, col); a *= freeze ? 1 : fb * (0.55+0.45*d.tone); k++; }
+  g.globalAlpha = 1;
+}
+
 /* ---------------- MIDI & keyboard ---------------- */
 const NOTE_NAMES=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
 const noteName = n => NOTE_NAMES[((n%12)+12)%12] + (Math.floor(n/12)-1);
@@ -822,7 +932,7 @@ function allOff(){ held=[]; target=null; update(); paintKeys(); }
 
 let learn = null;
 function paintCC(){
-  $('cc-p1').textContent='CC '+S.cc.p1; $('cc-p2').textContent='CC '+S.cc.p2; $('cc-vol').textContent='CC '+S.cc.vol;
+  document.querySelectorAll('[data-cc]').forEach(el=> el.textContent='CC '+S.cc[el.dataset.cc]);
   document.querySelectorAll('[data-learn]').forEach(b=> b.setAttribute('aria-pressed', b.dataset.learn===learn));
   $('cc-p2-name').textContent = S.mode==='notes' ? 'VR2 · скважность' : 'VR2 · Step';
   $('mode-hint').textContent = MODE_HINT[S.mode];
@@ -837,6 +947,9 @@ function onCC(num, val){
   }
   if(num===S.cc.p1 && (S.mode==='free' || !held.length)){ S.p1 = v*v; update(); }
   if(num===S.cc.vol){ S.vol = v; $('vol').value = v; update(); }
+  for(const k of ['time','fb','tone','wow','mix']) if(num===S.cc['d'+k[0].toUpperCase()+k.slice(1)]){ S.dl[k]=v; applyDelay(); }
+  if(num===S.cc.dOn){ S.dl.on = val>=64; applyDelay(); }
+  if(num===S.cc.dFreeze){ freeze = val>=64; applyDelay(); }
   if(num===120 || num===123) allOff();
 }
 function onMidi(e){
@@ -932,9 +1045,9 @@ function update(){
   cancelAnimationFrame(raf);
   raf = requestAnimationFrame(()=>{ drawScope(m); drawStair(m); });
 }
-function redraw(){ readColors(); update(); }
-readColors(); buildCheck(); update();
-window.addEventListener('resize', ()=> update());
+function redraw(){ readColors(); update(); drawEcho(); }
+readColors(); buildCheck(); update(); applyDelay();
+window.addEventListener('resize', ()=>{ update(); drawEcho(); });
 try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw); }catch(e){}
 new MutationObserver(redraw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>update());
