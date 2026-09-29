@@ -29,6 +29,8 @@
 | VR2 · Step / скважность | 1 (mod wheel) | Квадратичная кривая ≈ логарифмический A500K |
 | Громкость | 7 | |
 | All Notes Off | 120, 123 | Сброс зависших нот |
+| LFO Rate / Depth | 22 / 23 | см. `docs/lfo-filter.md` |
+| Filter Cutoff / Resonance | 20 / 21 | |
 | Delay: Time / Feedback / Tone / Wow / Mix | 12 / 13 / 14 / 15 / 91 | см. `docs/delay.md` |
 | Delay вкл./выкл. | 80 | ≥ 64 — вкл. |
 | Delay Freeze | 64 (педаль сустейна) | пока ≥ 64 |

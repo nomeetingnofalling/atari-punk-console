@@ -152,6 +152,18 @@ footer a{color:var(--accent)}
 .midi-foot b{color:var(--ink);font-weight:600}
 #m-target b{color:var(--accent)}
 
+/* ---------- mod & filter ---------- */
+.modf{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media (max-width:860px){.modf{grid-template-columns:1fr}}
+.modf .sub{display:flex;flex-direction:column;gap:12px;min-width:0}
+.modf .sub + .sub{border-left:1px solid var(--line);padding-left:20px}
+@media (max-width:860px){.modf .sub + .sub{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:16px}}
+.sub-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sub-body{display:grid;grid-template-columns:auto auto 1fr;gap:12px;align-items:start}
+@media (max-width:520px){.sub-body{grid-template-columns:1fr 1fr}.sub-body .field-col{grid-column:1/-1}}
+.field-col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.lfo-led{width:14px;height:14px;border-radius:50%;background:var(--accent);opacity:.15;box-shadow:0 0 0 1px var(--line)}
+#fresp{width:100%;height:120px;display:block}
 /* ---------- delay ---------- */
 .delay{display:flex;flex-direction:column;gap:14px}
 .delay-knobs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
@@ -251,6 +263,40 @@ footer a{color:var(--accent)}
         <div class="top"><h3>Карта ступеней при текущем VR1</h3><span class="lbl" id="stair-l">—</span></div>
         <canvas id="stair" aria-label="Зависимость выходной частоты от положения VR2"></canvas>
         <p class="hint">Сплошная — f<sub>OUT</sub> от положения VR2; пунктир — 1/T<sub>M</sub>, куда «хотел бы» идти тон без квантования. Точка — текущее положение.</p>
+      </div>
+    </div>
+  </div>
+  <div class="panel" id="modf" aria-labelledby="modf-h">
+    <div class="midi-head" style="margin-bottom:14px">
+      <div><span class="eyebrow">Основной осциллятор · между выв. 9 и Delay</span><h3 id="modf-h">LFO и фильтр</h3></div>
+    </div>
+    <div class="modf">
+      <div class="sub">
+        <div class="sub-head"><h3>LFO</h3><span class="lfo-led" id="lfo-led" aria-hidden="true"></span></div>
+        <div class="sub-body">
+          <div class="dk"><div class="knob sm" id="mk-lRate" role="slider" tabindex="0" aria-label="LFO, скорость" aria-valuemin="0" aria-valuemax="100"></div><span class="knob-name">Rate</span><span class="knob-val" id="mv-lRate">—</span><span class="learn"><span data-cc="lRate">CC 22</span><button data-learn="lRate" aria-pressed="false">Learn</button></span></div>
+          <div class="dk"><div class="knob sm" id="mk-lDepth" role="slider" tabindex="0" aria-label="LFO, глубина" aria-valuemin="0" aria-valuemax="100"></div><span class="knob-name">Depth</span><span class="knob-val" id="mv-lDepth">—</span><span class="learn"><span data-cc="lDepth">CC 23</span><button data-learn="lDepth" aria-pressed="false">Learn</button></span></div>
+          <div class="field-col">
+            <div class="field"><label for="lfo-shape">Форма</label>
+              <select id="lfo-shape"><option value="sine">Синус</option><option value="tri">Треугольник</option><option value="square">Меандр</option><option value="saw">Пила вниз</option><option value="sh">Sample &amp; Hold</option></select></div>
+            <div class="field"><label for="lfo-dest">Куда</label>
+              <select id="lfo-dest"><option value="p1">VR1 · Pitch</option><option value="p2">VR2 · Step</option><option value="cut">Cutoff фильтра</option></select></div>
+            <label class="check"><input type="checkbox" id="lfo-retrig"> <span>Перезапуск с каждой нотой</span></label>
+          </div>
+        </div>
+        <p class="hint" id="lfo-hint"></p>
+      </div>
+      <div class="sub">
+        <div class="sub-head"><h3>Filter</h3><span class="lbl" id="flt-l">—</span></div>
+        <div class="sub-body">
+          <div class="dk"><div class="knob sm" id="mk-fCut" role="slider" tabindex="0" aria-label="Фильтр, частота среза" aria-valuemin="0" aria-valuemax="100"></div><span class="knob-name">Cutoff</span><span class="knob-val" id="mv-fCut">—</span><span class="learn"><span data-cc="fCut">CC 20</span><button data-learn="fCut" aria-pressed="false">Learn</button></span></div>
+          <div class="dk"><div class="knob sm" id="mk-fRes" role="slider" tabindex="0" aria-label="Фильтр, резонанс" aria-valuemin="0" aria-valuemax="100"></div><span class="knob-name">Resonance</span><span class="knob-val" id="mv-fRes">—</span><span class="learn"><span data-cc="fRes">CC 21</span><button data-learn="fRes" aria-pressed="false">Learn</button></span></div>
+          <div class="field-col">
+            <div class="field"><label for="flt-type">Тип</label>
+              <select id="flt-type"><option value="lp">Low-pass 12 дБ/окт</option><option value="bp">Band-pass</option><option value="hp">High-pass 12 дБ/окт</option><option value="off">Выключен</option></select></div>
+          </div>
+        </div>
+        <canvas id="fresp" aria-label="АЧХ фильтра"></canvas>
       </div>
     </div>
   </div>
@@ -523,7 +569,10 @@ NC    : выв. 3, 11 (CV; можно 10 нФ на землю)</pre>
 'use strict';
 /* ---------------- model ---------------- */
 const S = { p1:0.16, p2:0.06, variant:'kaustic', out:'line', rs:false, vol:0.35, mode:'notes', gate:false, gateTouched:false, duty:0.5, bendRange:2, ch:0, qwerty:true, kbOct:3, cc:{p1:74,p2:1,vol:7}, dl:{on:true,time:0.56,fb:0.45,tone:0.6,wow:0.2,mix:0.32} };
-const CC_DEF = {p1:74,p2:1,vol:7,dOn:80,dFreeze:64,dTime:12,dFb:13,dTone:14,dWow:15,dMix:91}, DL_DEF = {...S.dl};
+S.lfo = {rate:0.45, depth:0.3, shape:'sine', dest:'cut', retrig:false};
+S.flt = {type:'lp', cut:0.8, res:0.35};
+const LFO_DEF = {...S.lfo}, FLT_DEF = {...S.flt};
+const CC_DEF = {lRate:22,lDepth:23,fCut:20,fRes:21,p1:74,p2:1,vol:7,dOn:80,dFreeze:64,dTime:12,dFb:13,dTone:14,dWow:15,dMix:91}, DL_DEF = {...S.dl};
 const VR = 500e3, R1 = 1e3, C1 = 10e-9, RSV = 330;
 const C2of = v => v==='mims' ? 10e-9 : 100e-9;
 
@@ -548,7 +597,7 @@ const store = {
   set(k,v){ try{ localStorage.setItem('apc.'+k, JSON.stringify(v)); }catch(e){} }
 };
 Object.assign(S, store.get('state', {}));
-S.cc = {...CC_DEF, ...(S.cc||{})}; S.dl = {...DL_DEF, ...(S.dl||{})};
+S.cc = {...CC_DEF, ...(S.cc||{})}; S.dl = {...DL_DEF, ...(S.dl||{})}; S.lfo = {...LFO_DEF, ...(S.lfo||{})}; S.flt = {...FLT_DEF, ...(S.flt||{})};
 let held = [], bend = 0, target = null;
 
 /* ---------------- knobs ---------------- */
@@ -593,45 +642,94 @@ function knob(el, get, set){
 }
 
 /* ---------------- audio ---------------- */
-const WORKLET = `
-class APC extends AudioWorkletProcessor{
-  constructor(){ super(); this.p={TA:1e-3,TM:5e-4,tl:7e-6,fc:1,gain:0.3}; this.t=0; this.tA=0; this.high=false; this.mEnd=0; this.y=0; this.xp=0; this.g=0;
-    this.port.onmessage=e=>{ Object.assign(this.p,e.data); if(this.tA>this.t+this.p.TA) this.tA=this.t+this.p.TA; if(this.high&&this.mEnd>this.t+this.p.TM) this.mEnd=this.t+this.p.TM; }; }
-  process(_,outs){
-    const out=outs[0]; const o=out[0]; const dt=1/sampleRate; const {TA,TM,fc,gain}=this.p;
-    const a=Math.exp(-2*Math.PI*fc*dt);
-    for(let i=0;i<o.length;i++){
-      let cur=this.t; const end=cur+dt; let cov=0, guard=0;
-      while(guard++<4000){
-        if(this.high){
-          if(this.mEnd<=end){ cov+=this.mEnd-cur; cur=this.mEnd; this.high=false; while(this.tA<=cur) this.tA+=TA; }
-          else { cov+=end-cur; break; }
-        } else {
-          if(this.tA<=end){ cur=Math.max(cur,this.tA); this.high=true; this.mEnd=this.tA+TM; this.tA+=TA; }
-          else break;
-        }
-      }
-      this.t=end;
-      const x=cov/dt; this.y=a*(this.y+x-this.xp); this.xp=x;
-      this.g+= (gain-this.g)*0.002;
-      o[i]=this.y*this.g;
+// Ядро звука: событийная модель 556 + выходной ФВЧ (C3) + LFO + фильтр SVF.
+// Одна и та же строка исполняется в AudioWorklet и в запасном ScriptProcessor.
+const CORE = `
+class APCCore{
+  constructor(sr){
+    this.sr=sr; this.t=0; this.tA=0; this.high=false; this.mEnd=0; this.y=0; this.xp=0; this.g=0;
+    this.ph=0; this.sh=0; this.lv=0; this.ic1=0; this.ic2=0;
+    this.p={p1:.16,p2:.06,VR:5e5,R1:1e3,C1:1e-8,C2:1e-7,rs:0,fc:1,gain:0,
+      lfo:{rate:1,depth:0,shape:'sine',dest:'p1'}, f:{type:'lp',cut:1,res:0}};
+  }
+  set(d){
+    for(const k in d){ if(k==='lfo'||k==='f') Object.assign(this.p[k],d[k]); else if(k!=='retrig') this.p[k]=d[k]; }
+    if(d.retrig){ this.ph=0; this.sh=Math.random()*2-1; }
+  }
+  lfoVal(){
+    const ph=this.ph;
+    switch(this.p.lfo.shape){
+      case 'tri': return ph<.5 ? 4*ph-1 : 3-4*ph;
+      case 'square': return ph<.5 ? 1 : -1;
+      case 'saw': return 1-2*ph;
+      case 'sh': return this.sh;
+      default: return Math.sin(2*Math.PI*ph);
     }
-    for(let c=1;c<out.length;c++) out[c].set(o);
+  }
+  render(o,n){
+    const P=this.p, L=P.lfo, F=P.f, dt=1/this.sr, a=Math.exp(-2*Math.PI*P.fc*dt), tl=0.693*P.R1*P.C1;
+    for(let i0=0;i0<n;i0+=16){
+      const m=Math.min(16,n-i0);
+      this.ph+=L.rate*m*dt; if(this.ph>=1){ this.ph-=Math.floor(this.ph); this.sh=Math.random()*2-1; }
+      const lv=this.lfoVal(), d=L.depth*L.depth; this.lv=lv;
+      let p1=P.p1, p2=P.p2, fcut=30*Math.pow(20000/30,F.cut);
+      const wob = p => Math.min(1,Math.max(0,(p+0.01)*Math.pow(2,2*d*lv)-0.01));   // ±2 октавы сопротивления
+      if(L.dest==='p1') p1=wob(p1); else if(L.dest==='p2') p2=wob(p2); else if(L.dest==='cut') fcut*=Math.pow(2,5*d*lv);
+      fcut=Math.min(Math.max(fcut,20),0.45*this.sr);
+      const TA=0.693*(p1*P.VR+P.rs+2*P.R1)*P.C1, TM=Math.max(1.1*(p2*P.VR+P.rs)*P.C2, tl);
+      if(this.tA>this.t+TA) this.tA=this.t+TA;
+      if(this.high && this.mEnd>this.t+TM) this.mEnd=this.t+TM;
+      const g=Math.tan(Math.PI*fcut*dt), k=1/(0.5*Math.pow(40,F.res)), a1=1/(1+g*(g+k)), a2=g*a1, a3=g*a2;
+      for(let i=i0;i<i0+m;i++){
+        let cur=this.t; const end=cur+dt; let cov=0, guard=0;
+        while(guard++<4000){
+          if(this.high){ if(this.mEnd<=end){ cov+=this.mEnd-cur; cur=this.mEnd; this.high=false; while(this.tA<=cur) this.tA+=TA; } else { cov+=end-cur; break; } }
+          else { if(this.tA<=end){ cur=Math.max(cur,this.tA); this.high=true; this.mEnd=this.tA+TM; this.tA+=TA; } else break; }
+        }
+        this.t=end;
+        const x=cov/dt; this.y=a*(this.y+x-this.xp); this.xp=x;
+        let out=this.y;
+        if(F.type!=='off'){
+          const v3=out-this.ic2, v1=a1*this.ic1+a2*v3, v2=this.ic2+a2*this.ic1+a3*v3;
+          this.ic1=2*v1-this.ic1; this.ic2=2*v2-this.ic2;
+          out = F.type==='lp' ? v2 : F.type==='bp' ? k*v1 : out-k*v1-v2;
+          out = Math.tanh(out);
+        }
+        this.g+=(P.gain-this.g)*0.002;
+        o[i]=out*this.g;
+      }
+    }
+  }
+}`;
+const WORKLET = CORE + `
+class APC extends AudioWorkletProcessor{
+  constructor(){ super(); this.c=new APCCore(sampleRate); this.n=0; this.port.onmessage=e=>this.c.set(e.data); }
+  process(_,outs){
+    const out=outs[0]; this.c.render(out[0], out[0].length);
+    for(let c=1;c<out.length;c++) out[c].set(out[0]);
+    if((this.n+=out[0].length) >= sampleRate/40){ this.n=0; this.port.postMessage({lv:this.c.lv}); }
     return true;
   }
 }
 registerProcessor('apc-556', APC);`;
 
-let ctx=null, node=null, running=false;
+let ctx=null, node=null, running=false, lfoLevel=0;
+const LFO_RATE = v => 0.05*Math.pow(400, v);          // 0.05 … 20 Гц
+const CUTOFF = v => 30*Math.pow(20000/30, v);          // 30 Гц … 20 кГц
+const QOF = v => 0.5*Math.pow(40, v);                  // Q 0.5 … 20
 function audioParams(){
-  const m = model(S.p1,S.p2);
   // line: 10uF into 14.7k ≈ 1.1 Hz; speaker: 10uF into 8 ohm ≈ 2 kHz
   const fc = S.out==='spk' ? 1/(2*Math.PI*8*10e-6) : 1/(2*Math.PI*14.7e3*10e-6);
   const gain = S.vol * (S.out==='spk' ? 0.9 : 0.55);
   const gated = S.gate && !held.length;
-  return {TA:m.TA, TM:m.TM, tl:m.tl, fc, gain: (running && !gated)?gain:0};
+  return {p1:S.p1, p2:S.p2, VR, R1, C1, C2:C2of(S.variant), rs:S.rs?RSV:0, fc, gain:(running && !gated)?gain:0,
+    lfo:{rate:LFO_RATE(S.lfo.rate), depth:S.lfo.depth, shape:S.lfo.shape, dest:S.lfo.dest},
+    f:{type:S.flt.type, cut:S.flt.cut, res:S.flt.res}};
 }
-function pushAudio(){ if(node && node.port) node.port.postMessage(audioParams()); else if(node && node._p) Object.assign(node._p, audioParams()); }
+function pushAudio(extra){
+  const p = Object.assign(audioParams(), extra||{});
+  if(node && node.port) node.port.postMessage(p); else if(node && node._c) node._c.set(p);
+}
 async function startAudio(){
   if(!ctx){
     ctx = new (window.AudioContext||window.webkitAudioContext)();
@@ -639,27 +737,18 @@ async function startAudio(){
       const url = URL.createObjectURL(new Blob([WORKLET],{type:'application/javascript'}));
       await ctx.audioWorklet.addModule(url);
       node = new AudioWorkletNode(ctx,'apc-556',{outputChannelCount:[2]});
+      node.port.onmessage = e=>{ if(e.data && typeof e.data.lv==='number') lfoLevel=e.data.lv; };
     }catch(e){
-      // fallback: ScriptProcessor running the same event model
-      const sp = ctx.createScriptProcessor(2048,0,2); const st={t:0,tA:0,high:false,mEnd:0,y:0,xp:0,g:0}; sp._p=audioParams();
-      sp.onaudioprocess = ev=>{
-        const o=ev.outputBuffer.getChannelData(0), o2=ev.outputBuffer.getChannelData(1), dt=1/ctx.sampleRate, p=sp._p;
-        if(st.tA>st.t+p.TA) st.tA=st.t+p.TA;
-        const a=Math.exp(-2*Math.PI*p.fc*dt);
-        for(let i=0;i<o.length;i++){
-          let cur=st.t; const end=cur+dt; let cov=0, g=0;
-          while(g++<4000){
-            if(st.high){ if(st.mEnd<=end){cov+=st.mEnd-cur;cur=st.mEnd;st.high=false;while(st.tA<=cur)st.tA+=p.TA;} else {cov+=end-cur;break;} }
-            else { if(st.tA<=end){cur=Math.max(cur,st.tA);st.high=true;st.mEnd=st.tA+p.TM;st.tA+=p.TA;} else break; }
-          }
-          st.t=end; const x=cov/dt; st.y=a*(st.y+x-st.xp); st.xp=x; st.g+=(p.gain-st.g)*0.002; o[i]=o2[i]=st.y*st.g;
-        }
-      };
+      // запасной путь: то же ядро в ScriptProcessor
+      const Core = new Function(CORE+'; return APCCore;')();
+      const sp = ctx.createScriptProcessor(2048,0,2); sp._c = new Core(ctx.sampleRate);
+      sp.onaudioprocess = ev=>{ const o=ev.outputBuffer.getChannelData(0); sp._c.render(o,o.length); ev.outputBuffer.getChannelData(1).set(o); lfoLevel=sp._c.lv; };
       node = sp;
     }
     buildFx(); node.connect(fx.dry); node.connect(fx.inG); applyDelay(true);
   }
   if(ctx.state!=='running') await ctx.resume();
+  pushAudio();
 }
 const powerBtn = document.getElementById('power');
 powerBtn.addEventListener('click', async ()=>{
@@ -805,6 +894,60 @@ $('rs').addEventListener('change', e=>{ S.rs=e.target.checked; buildCheck(); upd
 $('vol').addEventListener('input', e=>{ S.vol=+e.target.value; update(); });
 document.querySelectorAll('.presets button').forEach(b=> b.addEventListener('click', ()=>{ const [a,c]=b.dataset.p.split(',').map(Number); S.p1=a; S.p2=c; update(); }));
 
+/* ---------------- LFO & Filter ---------------- */
+const LFO_HINT = {
+  p1:'Качает VR1: вибрато на малой глубине, сирена на большой. В режиме «Ноты» строй плывёт вокруг ноты.',
+  p2:'Качает VR2: делитель N прыгает туда-сюда — классические «ступени» APC сами по себе.',
+  cut:'Качает срез фильтра до ±5 октав: wah, «квакание» с резонансом.'
+};
+const mKnobs = {
+  lRate: knob($('mk-lRate'), ()=>S.lfo.rate, v=>{ S.lfo.rate=v; applyMod(); }),
+  lDepth: knob($('mk-lDepth'), ()=>S.lfo.depth, v=>{ S.lfo.depth=v; applyMod(); }),
+  fCut: knob($('mk-fCut'), ()=>S.flt.cut, v=>{ S.flt.cut=v; applyMod(); }),
+  fRes: knob($('mk-fRes'), ()=>S.flt.res, v=>{ S.flt.res=v; applyMod(); }),
+};
+$('lfo-shape').value=S.lfo.shape; $('lfo-dest').value=S.lfo.dest; $('lfo-retrig').checked=S.lfo.retrig; $('flt-type').value=S.flt.type;
+$('lfo-shape').addEventListener('change', e=>{ S.lfo.shape=e.target.value; applyMod(); });
+$('lfo-dest').addEventListener('change', e=>{ S.lfo.dest=e.target.value; applyMod(); });
+$('lfo-retrig').addEventListener('change', e=>{ S.lfo.retrig=e.target.checked; applyMod(); });
+$('flt-type').addEventListener('change', e=>{ S.flt.type=e.target.value; applyMod(); });
+const fmtF = f => f>=1000 ? (f/1000).toFixed(f>=10000?1:2)+' кГц' : Math.round(f)+' Гц';
+function applyMod(){
+  Object.values(mKnobs).forEach(f=>f());
+  const r = LFO_RATE(S.lfo.rate);
+  $('mv-lRate').textContent = r<1 ? r.toFixed(2)+' Гц' : r.toFixed(1)+' Гц';
+  $('mv-lDepth').textContent = Math.round(S.lfo.depth*100)+' %';
+  $('mv-fCut').textContent = fmtF(CUTOFF(S.flt.cut));
+  $('mv-fRes').textContent = 'Q '+QOF(S.flt.res).toFixed(1);
+  $('lfo-hint').textContent = LFO_HINT[S.lfo.dest];
+  $('flt-l').textContent = S.flt.type==='off' ? 'выключен' : `срез ${fmtF(CUTOFF(S.flt.cut))} · Q ${QOF(S.flt.res).toFixed(1)}`;
+  pushAudio(); store.set('state', S); drawResp();
+}
+function drawResp(){
+  if(!C['--ink']) return;
+  const cv=$('fresp'), {g,w,h}=fitCanvas(cv); g.clearRect(0,0,w,h);
+  const L=50,R=6,T=6,B=18,pw=w-L-R,ph=h-T-B, fmin=20,fmax=20000, dbTop=24, dbBot=-36;
+  const X=f=>L+pw*Math.log(f/fmin)/Math.log(fmax/fmin), Y=db=>T+ph*(dbTop-Math.max(dbBot,Math.min(dbTop,db)))/(dbTop-dbBot);
+  g.font='10px "JetBrains Mono",monospace'; g.fillStyle=C['--muted']; g.strokeStyle=C['--line']; g.lineWidth=1;
+  g.textAlign='center'; g.textBaseline='top';
+  [50,100,200,500,1000,2000,5000,10000].forEach(f=>{ const x=Math.round(X(f))+.5; g.beginPath(); g.moveTo(x,T); g.lineTo(x,T+ph); g.stroke(); g.fillText(f>=1000?f/1000+'k':f, x, T+ph+4); });
+  g.textAlign='right'; g.textBaseline='middle';
+  [24,12,0,-12,-24].forEach(db=>{ const y=Math.round(Y(db))+.5; g.strokeStyle=db===0?C['--muted']:C['--line']; g.beginPath(); g.moveTo(L,y); g.lineTo(L+pw,y); g.stroke(); g.fillText((db>0?"+":db<0?"−":"")+Math.abs(db)+" дБ", L-4, y); });
+  const k=1/QOF(S.flt.res), fc0=CUTOFF(S.flt.cut), type=S.flt.type;
+  const mag=(f,fc)=>{ if(type==='off') return 0; const x=f/fc, re=1-x*x, im=k*x, den=Math.hypot(re,im);
+    const num = type==='lp'?1 : type==='hp'? x*x : k*x; return 20*Math.log10(num/den); };
+  const curve=(fc,col,wd,dash)=>{ g.strokeStyle=col; g.lineWidth=wd; g.setLineDash(dash||[]); g.beginPath();
+    for(let i=0;i<=pw;i++){ const f=fmin*Math.pow(fmax/fmin,i/pw), y=Y(mag(f,fc)); i?g.lineTo(L+i,y):g.moveTo(L+i,y); } g.stroke(); g.setLineDash([]); };
+  if(S.lfo.dest==='cut' && S.lfo.depth>0 && type!=='off'){ const o=5*S.lfo.depth*S.lfo.depth;
+    curve(Math.min(20000,fc0*Math.pow(2,o)), C['--muted'],1,[3,3]); curve(Math.max(20,fc0*Math.pow(2,-o)), C['--muted'],1,[3,3]); }
+  curve(fc0, C['--accent'], 2);
+}
+(function ledLoop(){
+  const el=$('lfo-led'); const vis = running && S.lfo.depth>0;
+  el.style.opacity = vis ? (0.2 + 0.8*(lfoLevel+1)/2).toFixed(2) : '0.15';
+  requestAnimationFrame(ledLoop);
+})();
+
 /* ---------------- Delay ---------------- */
 let fx = null, freeze = false;
 const DL = {
@@ -925,7 +1068,7 @@ function applyNote(){
 }
 function noteOn(n){
   if(!S.gateTouched && !S.gate){ S.gate = true; $('gate').checked = true; }
-  held = held.filter(x=>x!==n); held.push(n); applyNote(); paintKeys();
+  held = held.filter(x=>x!==n); held.push(n); if(S.lfo.retrig) pushAudio({retrig:true}); applyNote(); paintKeys();
 }
 function noteOff(n){ held = held.filter(x=>x!==n); if(held.length) applyNote(); else { target=null; update(); } paintKeys(); }
 function allOff(){ held=[]; target=null; update(); paintKeys(); }
@@ -950,6 +1093,10 @@ function onCC(num, val){
   for(const k of ['time','fb','tone','wow','mix']) if(num===S.cc['d'+k[0].toUpperCase()+k.slice(1)]){ S.dl[k]=v; applyDelay(); }
   if(num===S.cc.dOn){ S.dl.on = val>=64; applyDelay(); }
   if(num===S.cc.dFreeze){ freeze = val>=64; applyDelay(); }
+  if(num===S.cc.lRate){ S.lfo.rate=v; applyMod(); }
+  if(num===S.cc.lDepth){ S.lfo.depth=v; applyMod(); }
+  if(num===S.cc.fCut){ S.flt.cut=v; applyMod(); }
+  if(num===S.cc.fRes){ S.flt.res=v; applyMod(); }
   if(num===120 || num===123) allOff();
 }
 function onMidi(e){
@@ -1045,9 +1192,9 @@ function update(){
   cancelAnimationFrame(raf);
   raf = requestAnimationFrame(()=>{ drawScope(m); drawStair(m); });
 }
-function redraw(){ readColors(); update(); drawEcho(); }
-readColors(); buildCheck(); update(); applyDelay();
-window.addEventListener('resize', ()=>{ update(); drawEcho(); });
+function redraw(){ readColors(); update(); drawEcho(); drawResp(); }
+readColors(); buildCheck(); update(); applyDelay(); applyMod();
+window.addEventListener('resize', ()=>{ update(); drawEcho(); drawResp(); });
 try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw); }catch(e){}
 new MutationObserver(redraw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>update());
